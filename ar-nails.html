@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AR Nail Customizer</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <header class="navbar">
+    <div class="logo">AR Nail Try-On</div>
+    <nav>
+      <a href="user-dashboard.html">Dashboard</a>
+      <a href="booking.html">Book</a>
+      <a href="booking-history.html">History</a>
+      <a href="index.html">Logout</a>
+    </nav>
+  </header>
+
+  <main class="ar-page">
+    <h1>Customize Your Nails</h1>
+    <p>This page is reserved for your AR/WebAR nail preview feature.</p>
+
+    <div class="ar-box">
+      <div class="camera-placeholder">
+        Camera / WebAR Preview
+      </div>
+
+      <div class="customizer">
+        <h3>Nail Customizer</h3>
+
+        <label>Nail Color</label>
+        <input type="color" id="nailColor" value="#ff9ab5" onchange="changeNailColor()">
+
+        <label>Nail Shape</label>
+        <select id="nailShape">
+          <option>Almond</option>
+          <option>Square</option>
+          <option>Coffin</option>
+          <option>Stiletto</option>
+          <option>Round</option>
+        </select>
+
+        <label>Design</label>
+        <select id="nailDesign">
+          <option>Plain</option>
+          <option>Glitter</option>
+          <option>French Tip</option>
+          <option>Flower Art</option>
+          <option>Chrome</option>
+        </select>
+
+        <div id="nailPreview" class="nail-preview"></div>
+
+        <button class="btn full">Save Design</button>
+      </div>
+    </div>
+  </main>
+
+  <script src="js/script.js"></script>
+</body>
+</html>
