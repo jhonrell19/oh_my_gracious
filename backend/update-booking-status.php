@@ -25,7 +25,16 @@ if ($booking_id === "" || !in_array($status, $allowed_status)) {
     exit;
 }
 
-$stmt = $conn->prepare("UPDATE bookings SET status = ? WHERE id = ?");
+/*
+  If the admin marks the booking as Completed,
+  the payment is considered physically paid at the salon.
+*/
+if ($status === "Completed") {
+    $stmt = $conn->prepare("UPDATE bookings SET status = ?, payment_status = 'Paid' WHERE id = ?");
+} else {
+    $stmt = $conn->prepare("UPDATE bookings SET status = ? WHERE id = ?");
+}
+
 $stmt->bind_param("si", $status, $booking_id);
 
 if ($stmt->execute()) {

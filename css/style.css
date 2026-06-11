@@ -466,10 +466,11 @@ input[type="range"] {
 #inputVideo {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   transform: scaleX(-1);
   position: absolute;
   inset: 0;
+  background: #111;
 }
 
 #threeCanvas {
@@ -518,3 +519,116 @@ input[type="range"] {
   }
 }
 
+.status.topay {
+  color: #b8848a;
+}
+
+.polish-page {
+  padding: 35px;
+  text-align: center;
+  background: #fff7f8;
+  min-height: 100vh;
+}
+
+.polish-page h1 {
+  font-size: 42px;
+  color: #333;
+  margin-bottom: 25px;
+}
+
+.color-carousel {
+  max-width: 760px;
+  margin: 0 auto 8px;
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  padding: 10px 5px 15px;
+  justify-content: center;
+}
+
+.color-item {
+  min-width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  cursor: pointer;
+  box-shadow: inset 0 8px 15px rgba(255,255,255,0.35), 0 4px 10px rgba(0,0,0,0.12);
+}
+
+.color-item.active {
+  border: 3px solid #005c4b;
+  transform: scale(1.08);
+}
+
+#selectedColorText {
+  margin-bottom: 15px;
+  font-weight: bold;
+  color: #555;
+}
+
+.polish-tryon-card {
+  max-width: 760px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+.add-cart-btn {
+  width: 100%;
+  border: none;
+  background: #005c4b;
+  color: white;
+  padding: 16px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.add-cart-btn:hover {
+  background: #014436;
+}
+
+.polish-camera-wrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background: #111;
+  overflow: hidden;
+}
+
+#inputVideo {
+  display: none;
+}
+
+#outputCanvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.polish-controls {
+  max-width: 760px;
+  margin: 25px auto;
+  background: white;
+  padding: 25px;
+  border-radius: 18px;
+  text-align: left;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+}
+
+.polish-controls label {
+  margin-top: 15px;
+}
+
+.camera-buttons {
+  padding: 18px;
+}
+
+.captured-image {
+  margin: 15px auto 25px;
+  max-width: 95%;
+  display: block;
+  border-radius: 12px;
+  border: 3px solid #b8848a;
+}

@@ -1,5 +1,6 @@
 <?php
 session_start();
+include "backend/db.php";
 
 if (!isset($_SESSION["user_id"])) {
     header("Location: login.html");
@@ -10,6 +11,39 @@ if ($_SESSION["role"] !== "user") {
     header("Location: admin-dashboard.php");
     exit;
 }
+
+$selected_date = $_GET["date"] ?? date("Y-m-d");
+
+$booked_times = [];
+
+$stmt = $conn->prepare("
+    SELECT booking_time 
+    FROM bookings 
+    WHERE booking_date = ? 
+    AND status IN ('Pending', 'Approved')
+");
+$stmt->bind_param("s", $selected_date);
+$stmt->execute();
+$result = $stmt->get_result();
+
+while ($row = $result->fetch_assoc()) {
+    $booked_times[] = substr($row["booking_time"], 0, 5);
+}
+
+$time_slots = [
+    "10:00" => "10:00 AM",
+    "11:00" => "11:00 AM",
+    "12:00" => "12:00 PM",
+    "13:00" => "1:00 PM",
+    "14:00" => "2:00 PM",
+    "15:00" => "3:00 PM",
+    "16:00" => "4:00 PM",
+    "17:00" => "5:00 PM",
+    "18:00" => "6:00 PM",
+    "19:00" => "7:00 PM",
+    "20:00" => "8:00 PM",
+    "21:00" => "9:00 PM"
+];
 ?>
 
 <!DOCTYPE html>
@@ -28,6 +62,7 @@ if ($_SESSION["role"] !== "user") {
     <a href="user-dashboard.php">Dashboard</a>
     <a href="booking.php">Book</a>
     <a href="booking-history.php">History</a>
+    <a href="ar-3d-nails.php">3D AR Nails</a>
     <a href="logout.php" class="logout-btn">Logout</a>
   </nav>
 </header>
@@ -35,7 +70,25 @@ if ($_SESSION["role"] !== "user") {
 <main class="form-container">
   <h2>Book Your Nail Appointment</h2>
 
-  <form action="backend/create-booking.php" method="POST" onsubmit="return fakePaymentProcess()">
+  <div class="payment-box">
+    <h3>Salon Schedule</h3>
+    <p><strong>Open:</strong> 10:00 AM</p>
+    <p><strong>Close:</strong> 10:00 PM</p>
+    <p><strong>Payment:</strong> Physical payment at the salon only.</p>
+    <p>Note: Booked time slots are disabled until the admin marks the booking as Completed or Rejected.</p>
+  </div>
+
+  <form method="GET" action="booking.php">
+    <label>Choose Date First</label>
+    <input type="date" name="date" value="<?php echo htmlspecialchars($selected_date); ?>" required>
+    <button type="submit" class="btn full secondary">Check Available Times</button>
+  </form>
+
+  <hr>
+
+  <form action="backend/create-booking.php" method="POST">
+
+    <input type="hidden" name="booking_date" value="<?php echo htmlspecialchars($selected_date); ?>">
 
     <label>Full Name</label>
     <input type="text" name="full_name" value="<?php echo htmlspecialchars($_SESSION["full_name"]); ?>" required>
@@ -54,28 +107,33 @@ if ($_SESSION["role"] !== "user") {
     <input type="text" id="amountDisplay" value="₱0" readonly>
     <input type="hidden" name="amount" id="amountInput" value="0">
 
-    <label>Preferred Date</label>
-    <input type="date" name="booking_date" required>
+    <label>Selected Date</label>
+    <input type="text" value="<?php echo htmlspecialchars($selected_date); ?>" readonly>
 
-    <label>Preferred Time</label>
-    <input type="time" name="booking_time" required>
+    <label>Available Time</label>
+    <select name="booking_time" required>
+      <option value="">Select available time</option>
 
-    <label>Payment Method</label>
-    <select name="payment_method" id="paymentMethod" onchange="showPaymentInfo()" required>
-      <option value="">Select payment method</option>
-      <option value="GCash">GCash</option>
-      <option value="PayPal">PayPal</option>
+      <?php foreach ($time_slots as $value => $label) { ?>
+        <?php if (in_array($value, $booked_times)) { ?>
+          <option value="<?php echo $value; ?>" disabled>
+            <?php echo $label; ?> - Already Booked
+          </option>
+        <?php } else { ?>
+          <option value="<?php echo $value; ?>">
+            <?php echo $label; ?> - Available
+          </option>
+        <?php } ?>
+      <?php } ?>
     </select>
 
-    <div id="paymentBox" class="payment-box hidden"></div>
-
-    <label>Payment Reference Number</label>
-    <input type="text" name="payment_reference" id="paymentReference" readonly required>
+    <label>Payment Method</label>
+    <input type="text" value="Physical Payment at Salon" readonly>
 
     <label>Additional Notes</label>
     <textarea name="notes" placeholder="Example: pink nails, short length, flower design"></textarea>
 
-    <button type="submit" class="btn full">Pay and Submit Booking</button>
+    <button type="submit" class="btn full">Submit Booking Request</button>
   </form>
 </main>
 
@@ -87,57 +145,6 @@ function updateAmount() {
 
   document.getElementById("amountDisplay").value = "₱" + price;
   document.getElementById("amountInput").value = price;
-}
-
-function showPaymentInfo() {
-  const method = document.getElementById("paymentMethod").value;
-  const paymentBox = document.getElementById("paymentBox");
-
-  paymentBox.classList.remove("hidden");
-
-  if (method === "GCash") {
-    paymentBox.innerHTML = `
-      <h3>GCash Test Payment</h3>
-      <p>This is only a test payment.</p>
-      <p><strong>GCash Number:</strong> 09XX-XXX-XXXX</p>
-      <p><strong>Account Name:</strong> Oh My Gracious</p>
-      <p>When you submit, the system will automatically say payment successful.</p>
-    `;
-  } else if (method === "PayPal") {
-    paymentBox.innerHTML = `
-      <h3>PayPal Test Payment</h3>
-      <p>This is only a test payment.</p>
-      <p><strong>PayPal Email:</strong> test-paypal@ohmygracious.com</p>
-      <p>When you submit, the system will automatically say payment successful.</p>
-    `;
-  } else {
-    paymentBox.classList.add("hidden");
-    paymentBox.innerHTML = "";
-  }
-}
-
-function fakePaymentProcess() {
-  const amount = document.getElementById("amountInput").value;
-  const method = document.getElementById("paymentMethod").value;
-  const referenceInput = document.getElementById("paymentReference");
-
-  if (amount <= 0) {
-    alert("Please select a service first.");
-    return false;
-  }
-
-  if (method === "") {
-    alert("Please select a payment method.");
-    return false;
-  }
-
-  alert("Processing " + method + " payment...");
-  alert("Payment successful!");
-
-  const fakeReference = method.toUpperCase() + "-" + Date.now();
-  referenceInput.value = fakeReference;
-
-  return true;
 }
 </script>
 

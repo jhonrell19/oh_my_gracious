@@ -12,7 +12,7 @@ if ($_SESSION["role"] !== "admin") {
     exit;
 }
 
-$bookings = $conn->query("SELECT * FROM bookings ORDER BY created_at DESC");
+$bookings = $conn->query("SELECT * FROM bookings ORDER BY booking_date DESC, booking_time DESC");
 
 $total = $conn->query("SELECT COUNT(*) AS total FROM bookings")->fetch_assoc()["total"];
 $pending = $conn->query("SELECT COUNT(*) AS total FROM bookings WHERE status = 'Pending'")->fetch_assoc()["total"];
@@ -41,7 +41,7 @@ $completed = $conn->query("SELECT COUNT(*) AS total FROM bookings WHERE status =
 
 <main class="dashboard">
   <h1>Booking Requests</h1>
-  <p>View user bookings, payment references, and update booking status.</p>
+  <p>Salon schedule is 10:00 AM to 10:00 PM. Payment is physical only.</p>
 
   <div class="cards">
     <div class="card">
@@ -76,7 +76,6 @@ $completed = $conn->query("SELECT COUNT(*) AS total FROM bookings WHERE status =
         <th>Payment</th>
         <th>Payment Status</th>
         <th>Amount</th>
-        <th>Reference</th>
         <th>Booking Status</th>
         <th>Action</th>
       </tr>
@@ -90,15 +89,14 @@ $completed = $conn->query("SELECT COUNT(*) AS total FROM bookings WHERE status =
             <td><?php echo htmlspecialchars($row["email"]); ?></td>
             <td><?php echo htmlspecialchars($row["service_type"]); ?></td>
             <td><?php echo htmlspecialchars($row["booking_date"]); ?></td>
-            <td><?php echo htmlspecialchars($row["booking_time"]); ?></td>
+            <td><?php echo date("g:i A", strtotime($row["booking_time"])); ?></td>
             <td><?php echo htmlspecialchars($row["payment_method"]); ?></td>
             <td>
-              <span class="status paid">
+              <span class="status topay">
                 <?php echo htmlspecialchars($row["payment_status"]); ?>
               </span>
             </td>
             <td>₱<?php echo htmlspecialchars($row["amount"]); ?></td>
-            <td><?php echo htmlspecialchars($row["payment_reference"]); ?></td>
             <td>
               <span class="status <?php echo strtolower($row["status"]); ?>">
                 <?php echo htmlspecialchars($row["status"]); ?>
@@ -120,14 +118,14 @@ $completed = $conn->query("SELECT COUNT(*) AS total FROM bookings WHERE status =
               <form action="backend/update-booking-status.php" method="POST" class="action-form">
                 <input type="hidden" name="booking_id" value="<?php echo $row["id"]; ?>">
                 <input type="hidden" name="status" value="Completed">
-                <button type="submit" class="small-btn complete">Complete</button>
+                <button type="submit" class="small-btn complete">Done</button>
               </form>
             </td>
           </tr>
         <?php } ?>
       <?php } else { ?>
         <tr>
-          <td colspan="11">No booking requests yet.</td>
+          <td colspan="10">No booking requests yet.</td>
         </tr>
       <?php } ?>
     </tbody>

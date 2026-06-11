@@ -1,8 +1,6 @@
-import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js";
-
 const video = document.getElementById("inputVideo");
 const canvas = document.getElementById("threeCanvas");
-const wrapper = document.getElementById("arWrapper");
+const ctx = canvas.getContext("2d");
 
 const startBtn = document.getElementById("startBtn");
 const captureBtn = document.getElementById("captureBtn");
@@ -14,27 +12,30 @@ const nailShapeInput = document.getElementById("nailShape");
 const nailFinishInput = document.getElementById("nailFinish");
 const nailSizeInput = document.getElementById("nailSize");
 const verticalOffsetInput = document.getElementById("verticalOffset");
-const nailDepthInput = document.getElementById("nailDepth");
 const showDebugInput = document.getElementById("showDebug");
 
-let scene;
-let camera3D;
-let renderer;
-let hands;
-let mediaPipeCamera;
-let nailMeshes = [];
-let debugMeshes = [];
-let latestFrameReady = false;
+let hands = null;
+let camera = null;
+let latestImage = null;
 
 const fingers = [
-  { name: "thumb", tip: 4, base: 3, widthBoost: 1.15, heightBoost: 0.9 },
-  { name: "index", tip: 8, base: 6, widthBoost: 1.0, heightBoost: 1.0 },
-  { name: "middle", tip: 12, base: 10, widthBoost: 1.05, heightBoost: 1.1 },
-  { name: "ring", tip: 16, base: 14, widthBoost: 0.95, heightBoost: 1.0 },
-  { name: "pinky", tip: 20, base: 18, widthBoost: 0.8, heightBoost: 0.85 }
+  { name: "thumb", tip: 4, dip: 3, pip: 2, widthBoost: 1.45, heightBoost: 1.10, shift: 0.22 },
+  { name: "index", tip: 8, dip: 7, pip: 6, widthBoost: 1.25, heightBoost: 1.15, shift: 0.25 },
+  { name: "middle", tip: 12, dip: 11, pip: 10, widthBoost: 1.30, heightBoost: 1.20, shift: 0.25 },
+  { name: "ring", tip: 16, dip: 15, pip: 14, widthBoost: 1.20, heightBoost: 1.15, shift: 0.25 },
+  { name: "pinky", tip: 20, dip: 19, pip: 18, widthBoost: 1.05, heightBoost: 1.00, shift: 0.25 }
 ];
 
-startBtn.addEventListener("click", startAR);
+const smoothNails = new Array(5).fill(null).map(() => ({
+  x: 0,
+  y: 0,
+  w: 0,
+  h: 0,
+  angle: 0,
+  ready: false
+}));
+
+startBtn.addEventListener("click", startCamera);
 captureBtn.addEventListener("click", capturePreview);
 saveBtn.addEventListener("click", saveDesign);
 
@@ -45,405 +46,412 @@ function getSettings() {
     finish: nailFinishInput.value,
     size: parseFloat(nailSizeInput.value),
     verticalOffset: parseFloat(verticalOffsetInput.value),
-    depth: parseFloat(nailDepthInput.value),
     showDebug: showDebugInput.value === "yes"
   };
 }
 
-function initThree() {
-  scene = new THREE.Scene();
+async function startCamera() {
+  try {
+    if (hands !== null) {
+      alert("Camera is already running.");
+      return;
+    }
 
-  const width = wrapper.clientWidth;
-  const height = wrapper.clientHeight;
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      alert("Camera access is not supported in this browser.");
+      return;
+    }
 
-  camera3D = new THREE.OrthographicCamera(
-    width / -2,
-    width / 2,
-    height / 2,
-    height / -2,
-    -1000,
-    1000
-  );
+    if (typeof Hands === "undefined") {
+      alert("MediaPipe Hands did not load. Check your internet connection.");
+      return;
+    }
 
-  camera3D.position.z = 500;
+    if (typeof Camera === "undefined") {
+      alert("MediaPipe Camera Utils did not load. Check your internet connection.");
+      return;
+    }
 
-  renderer = new THREE.WebGLRenderer({
-    canvas: canvas,
-    alpha: true,
-    antialias: true,
-    preserveDrawingBuffer: true
-  });
-
-  renderer.setPixelRatio(window.devicePixelRatio);
-  renderer.setSize(width, height);
-
-  const ambientLight = new THREE.AmbientLight(0xffffff, 1.4);
-  scene.add(ambientLight);
-
-  const mainLight = new THREE.DirectionalLight(0xffffff, 1.8);
-  mainLight.position.set(120, 180, 300);
-  scene.add(mainLight);
-
-  const sideLight = new THREE.DirectionalLight(0xffc9df, 0.9);
-  sideLight.position.set(-200, 80, 150);
-  scene.add(sideLight);
-
-  createNailMeshes();
-  createDebugMeshes();
-
-  window.addEventListener("resize", resizeThree);
-}
-
-function resizeThree() {
-  const width = wrapper.clientWidth;
-  const height = wrapper.clientHeight;
-
-  camera3D.left = width / -2;
-  camera3D.right = width / 2;
-  camera3D.top = height / 2;
-  camera3D.bottom = height / -2;
-  camera3D.updateProjectionMatrix();
-
-  renderer.setSize(width, height);
-}
-
-function createNailMeshes() {
-  nailMeshes.forEach(mesh => scene.remove(mesh));
-  nailMeshes = [];
-
-  for (let i = 0; i < 5; i++) {
-    const mesh = createNailMesh();
-    mesh.visible = false;
-    nailMeshes.push(mesh);
-    scene.add(mesh);
-  }
-}
-
-function createNailMesh() {
-  const geometry = createNailGeometry(getSettings().shape);
-
-  const material = createNailMaterial();
-
-  const mesh = new THREE.Mesh(geometry, material);
-
-  mesh.rotation.x = THREE.MathUtils.degToRad(20);
-  mesh.renderOrder = 10;
-
-  return mesh;
-}
-
-function createNailGeometry(shape) {
-  if (shape === "square") {
-    return new THREE.BoxGeometry(1, 1.4, 0.22, 4, 8, 2);
-  }
-
-  if (shape === "stiletto") {
-    return new THREE.ConeGeometry(0.52, 1.7, 32, 1);
-  }
-
-  if (shape === "coffin") {
-    const shape2D = new THREE.Shape();
-    shape2D.moveTo(-0.32, -0.7);
-    shape2D.lineTo(0.32, -0.7);
-    shape2D.lineTo(0.5, 0.7);
-    shape2D.lineTo(-0.5, 0.7);
-    shape2D.lineTo(-0.32, -0.7);
-
-    return new THREE.ExtrudeGeometry(shape2D, {
-      depth: 0.18,
-      bevelEnabled: true,
-      bevelThickness: 0.08,
-      bevelSize: 0.06,
-      bevelSegments: 4
+    hands = new Hands({
+      locateFile: function (file) {
+        return "https://cdn.jsdelivr.net/npm/@mediapipe/hands/" + file;
+      }
     });
+
+    hands.setOptions({
+      maxNumHands: 1,
+      modelComplexity: 1,
+      minDetectionConfidence: 0.75,
+      minTrackingConfidence: 0.75
+    });
+
+    hands.onResults(onResults);
+
+    camera = new Camera(video, {
+      onFrame: async function () {
+        await hands.send({ image: video });
+      },
+      width: 960,
+      height: 720
+    });
+
+    await camera.start();
+
+    console.log("Camera started successfully.");
+  } catch (error) {
+    console.error("Camera error:", error);
+    alert("Camera failed: " + error.message);
   }
-
-  if (shape === "round") {
-    return new THREE.SphereGeometry(0.55, 32, 32, 0, Math.PI * 2, 0, Math.PI);
-  }
-
-  // almond default
-  const almond = new THREE.Shape();
-  almond.moveTo(0, -0.85);
-  almond.quadraticCurveTo(0.55, -0.35, 0.42, 0.65);
-  almond.quadraticCurveTo(0, 0.85, -0.42, 0.65);
-  almond.quadraticCurveTo(-0.55, -0.35, 0, -0.85);
-
-  return new THREE.ExtrudeGeometry(almond, {
-    depth: 0.2,
-    bevelEnabled: true,
-    bevelThickness: 0.08,
-    bevelSize: 0.06,
-    bevelSegments: 5
-  });
-}
-
-function createNailMaterial() {
-  const settings = getSettings();
-
-  let roughness = 0.22;
-  let metalness = 0.08;
-  let clearcoat = 1.0;
-
-  if (settings.finish === "chrome") {
-    roughness = 0.12;
-    metalness = 0.85;
-    clearcoat = 1.0;
-  }
-
-  if (settings.finish === "matte") {
-    roughness = 0.85;
-    metalness = 0.02;
-    clearcoat = 0.1;
-  }
-
-  if (settings.finish === "pearl") {
-    roughness = 0.3;
-    metalness = 0.25;
-    clearcoat = 1.0;
-  }
-
-  return new THREE.MeshPhysicalMaterial({
-    color: new THREE.Color(settings.color),
-    roughness: roughness,
-    metalness: metalness,
-    clearcoat: clearcoat,
-    clearcoatRoughness: 0.12,
-    transparent: true,
-    opacity: 0.96
-  });
-}
-
-function recreateNailsIfShapeChanged() {
-  const selectedShape = getSettings().shape;
-
-  nailMeshes.forEach((mesh, index) => {
-    if (mesh.userData.shape !== selectedShape) {
-      scene.remove(mesh);
-
-      const newMesh = createNailMesh();
-      newMesh.userData.shape = selectedShape;
-      newMesh.visible = false;
-
-      nailMeshes[index] = newMesh;
-      scene.add(newMesh);
-    }
-  });
-}
-
-function updateNailMaterials() {
-  const material = createNailMaterial();
-
-  nailMeshes.forEach(mesh => {
-    mesh.material.dispose();
-    mesh.material = material.clone();
-  });
-}
-
-function createDebugMeshes() {
-  for (let i = 0; i < 21; i++) {
-    const geometry = new THREE.SphereGeometry(4, 12, 12);
-    const material = new THREE.MeshBasicMaterial({ color: 0x00ff99 });
-    const dot = new THREE.Mesh(geometry, material);
-    dot.visible = false;
-    debugMeshes.push(dot);
-    scene.add(dot);
-  }
-}
-
-async function startAR() {
-  if (!scene) {
-    initThree();
-  }
-
-  if (hands) {
-    alert("AR camera is already running.");
-    return;
-  }
-
-  hands = new window.Hands({
-    locateFile: function(file) {
-      return "https://cdn.jsdelivr.net/npm/@mediapipe/hands/" + file;
-    }
-  });
-
-  hands.setOptions({
-    maxNumHands: 1,
-    modelComplexity: 1,
-    minDetectionConfidence: 0.7,
-    minTrackingConfidence: 0.7
-  });
-
-  hands.onResults(onResults);
-
-  mediaPipeCamera = new window.Camera(video, {
-    onFrame: async function() {
-      await hands.send({ image: video });
-    },
-    width: 960,
-    height: 720
-  });
-
-  await mediaPipeCamera.start();
 }
 
 function onResults(results) {
-  if (!renderer || !scene || !camera3D) {
-    return;
-  }
+  const image = results.image;
 
-  const width = wrapper.clientWidth;
-  const height = wrapper.clientHeight;
+  canvas.width = image.width;
+  canvas.height = image.height;
 
-  renderer.setSize(width, height);
+  ctx.save();
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  if (video.readyState >= 2) {
-    latestFrameReady = true;
-  }
+  ctx.translate(canvas.width, 0);
+  ctx.scale(-1, 1);
 
-  recreateNailsIfShapeChanged();
-  updateNailMaterials();
+  ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
 
   if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-    const landmarks = results.multiHandLandmarks[0];
-    updateNailsFromLandmarks(landmarks, width, height);
-    updateDebugPoints(landmarks, width, height);
+    drawNailPolish(results.multiHandLandmarks[0]);
   } else {
-    hideNails();
-    hideDebugPoints();
+    drawNoHandMessage();
   }
 
-  renderer.render(scene, camera3D);
+  ctx.restore();
+
+  latestImage = canvas.toDataURL("image/png");
 }
 
-function updateNailsFromLandmarks(landmarks, width, height) {
+function drawNailPolish(landmarks) {
   const settings = getSettings();
 
   fingers.forEach((finger, index) => {
-    const tip = landmarks[finger.tip];
-    const base = landmarks[finger.base];
+    const tip = toCanvasPoint(landmarks[finger.tip]);
+    const dip = toCanvasPoint(landmarks[finger.dip]);
+    const pip = toCanvasPoint(landmarks[finger.pip]);
 
-    const tipPoint = landmarkToScreenPoint(tip, width, height);
-    const basePoint = landmarkToScreenPoint(base, width, height);
+    const dx = tip.x - dip.x;
+    const dy = tip.y - dip.y;
 
-    const dx = tipPoint.x - basePoint.x;
-    const dy = tipPoint.y - basePoint.y;
+    const upperLength = Math.sqrt(dx * dx + dy * dy);
 
-    const fingerLength = Math.sqrt(dx * dx + dy * dy);
+    if (upperLength < 5) {
+      return;
+    }
 
-    const unitX = dx / fingerLength;
-    const unitY = dy / fingerLength;
+    const unitX = dx / upperLength;
+    const unitY = dy / upperLength;
 
-    const nailWidth = fingerLength * 0.32 * settings.size * finger.widthBoost;
-    const nailHeight = fingerLength * 0.55 * settings.size * finger.heightBoost;
+    const jointLength = distance(dip, pip);
 
-    //const angle = Math.atan2(dy, dx) - Math.PI / 2;
-    const angle = 0;
+    let nailWidth = jointLength * 0.55 * settings.size * finger.widthBoost;
+    let nailHeight = upperLength * 0.95 * settings.size * finger.heightBoost; 
 
-    /*
-      The nail should not sit exactly on the fingertip.
-      It should move slightly backward toward the finger base.
-    */
-    const centerX = tipPoint.x - unitX * nailHeight * 0.25;
-    const centerY = tipPoint.y - unitY * nailHeight * 0.25 + settings.verticalOffset;
+    if (finger.name === "thumb") {
+      nailWidth *= 1.15;
+      nailHeight *= 0.9;
+    }
 
-    const mesh = nailMeshes[index];
+    const targetX = tip.x - unitX * upperLength * finger.shift;
+    const targetY = tip.y - unitY * upperLength * finger.shift + settings.verticalOffset;
 
-    mesh.visible = true;
+    const targetAngle = Math.atan2(dy, dx) - Math.PI / 2;
 
-    mesh.position.set(
-      centerX,
-      centerY,
-      settings.depth
+    const smooth = smoothNails[index];
+
+    if (!smooth.ready) {
+      smooth.x = targetX;
+      smooth.y = targetY;
+      smooth.w = nailWidth;
+      smooth.h = nailHeight;
+      smooth.angle = targetAngle;
+      smooth.ready = true;
+    } else {
+      smooth.x = lerp(smooth.x, targetX, 0.45);
+      smooth.y = lerp(smooth.y, targetY, 0.45);
+      smooth.w = lerp(smooth.w, nailWidth, 0.35);
+      smooth.h = lerp(smooth.h, nailHeight, 0.35);
+      smooth.angle = lerpAngle(smooth.angle, targetAngle, 0.25);
+    }
+
+    drawSinglePolishMask(
+      smooth.x,
+      smooth.y,
+      smooth.w,
+      smooth.h,
+      smooth.angle,
+      finger.name,
+      settings
     );
 
-    mesh.scale.set(
-      nailWidth,
-      nailHeight,
-      Math.max(nailWidth, nailHeight) * 0.14
-    );
-
-   mesh.rotation.set(
-  THREE.MathUtils.degToRad(18),
-  THREE.MathUtils.degToRad(0),
-  0
-);
-
-if (finger.name === "thumb") {
-  mesh.rotation.z = THREE.MathUtils.degToRad(-18);
-}
+    if (settings.showDebug) {
+      drawDebugPoint(tip.x, tip.y);
+      drawDebugPoint(dip.x, dip.y);
+      drawDebugPoint(pip.x, pip.y);
+    }
   });
 }
 
-function landmarkToScreenPoint(landmark, width, height) {
-  const x = (0.5 - landmark.x) * width;
-  const y = (0.5 - landmark.y) * height;
-
+function toCanvasPoint(landmark) {
   return {
-    x: x,
-    y: y,
-    z: landmark.z || 0
+    x: landmark.x * canvas.width,
+    y: landmark.y * canvas.height
   };
 }
 
-function updateDebugPoints(landmarks, width, height) {
-  const settings = getSettings();
+function drawSinglePolishMask(x, y, w, h, angle, fingerName, settings) {
+  ctx.save();
 
-  if (!settings.showDebug) {
-    hideDebugPoints();
+  ctx.translate(x, y);
+  ctx.rotate(angle);
+
+  if (fingerName === "thumb") {
+    ctx.rotate(-0.25);
+  }
+
+  ctx.fillStyle = "rgba(0, 0, 0, 0.10)";
+  createNailPath(2, 3, w * 1.04, h * 1.04, settings.shape);
+  ctx.fill();
+
+  const gradient = ctx.createLinearGradient(0, -h / 2, 0, h / 2);
+
+  if (settings.finish === "chrome") {
+    gradient.addColorStop(0, "#ffffff");
+    gradient.addColorStop(0.25, lightenColor(settings.color, 45));
+    gradient.addColorStop(0.55, settings.color);
+    gradient.addColorStop(1, darkenColor(settings.color, 35));
+  } else if (settings.finish === "matte") {
+    gradient.addColorStop(0, lightenColor(settings.color, 15));
+    gradient.addColorStop(1, darkenColor(settings.color, 15));
+  } else if (settings.finish === "pearl") {
+    gradient.addColorStop(0, "#fff3f8");
+    gradient.addColorStop(0.45, lightenColor(settings.color, 30));
+    gradient.addColorStop(1, settings.color);
+  } else {
+    gradient.addColorStop(0, lightenColor(settings.color, 45));
+    gradient.addColorStop(0.45, settings.color);
+    gradient.addColorStop(1, darkenColor(settings.color, 30));
+  }
+
+  ctx.fillStyle = gradient;
+  createNailPath(0, 0, w, h, settings.shape);
+  ctx.fill();
+
+  if (settings.finish !== "matte") {
+    ctx.fillStyle = "rgba(255, 255, 255, 0.32)";
+    ctx.beginPath();
+    ctx.ellipse(
+      -w * 0.16,
+      -h * 0.12,
+      w * 0.13,
+      h * 0.30,
+      0.18,
+      0,
+      Math.PI * 2
+    );
+    ctx.fill();
+
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.28)";
+    ctx.lineWidth = Math.max(1, w * 0.035);
+    ctx.beginPath();
+    ctx.moveTo(-w * 0.18, h * 0.30);
+    ctx.quadraticCurveTo(0, h * 0.42, w * 0.18, h * 0.30);
+    ctx.stroke();
+  }
+
+  ctx.strokeStyle = "rgba(255,255,255,0.30)";
+  ctx.lineWidth = Math.max(1, w * 0.025);
+  createNailPath(0, 0, w, h, settings.shape);
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+function createNailPath(x, y, w, h, shape) {
+  ctx.beginPath();
+
+  if (shape === "square") {
+    roundedRect(x - w / 2, y - h / 2, w, h, w * 0.12);
     return;
   }
 
-  landmarks.forEach((landmark, index) => {
-    const point = landmarkToScreenPoint(landmark, width, height);
-    debugMeshes[index].visible = true;
-    debugMeshes[index].position.set(point.x, point.y, 60);
-  });
+  if (shape === "coffin") {
+    ctx.moveTo(x - w * 0.32, y - h / 2);
+    ctx.lineTo(x + w * 0.32, y - h / 2);
+    ctx.lineTo(x + w * 0.50, y + h / 2);
+    ctx.lineTo(x - w * 0.50, y + h / 2);
+    ctx.closePath();
+    return;
+  }
+
+  if (shape === "stiletto") {
+    ctx.moveTo(x, y - h / 2);
+    ctx.lineTo(x + w * 0.48, y + h / 2);
+    ctx.lineTo(x - w * 0.48, y + h / 2);
+    ctx.closePath();
+    return;
+  }
+
+  if (shape === "round") {
+    ctx.moveTo(x, y - h / 2);
+    ctx.bezierCurveTo(
+      x + w * 0.45,
+      y - h * 0.46,
+      x + w * 0.50,
+      y - h * 0.05,
+      x + w * 0.45,
+      y + h * 0.28
+    );
+    ctx.bezierCurveTo(
+      x + w * 0.35,
+      y + h * 0.55,
+      x - w * 0.35,
+      y + h * 0.55,
+      x - w * 0.45,
+      y + h * 0.28
+    );
+    ctx.bezierCurveTo(
+      x - w * 0.50,
+      y - h * 0.05,
+      x - w * 0.45,
+      y - h * 0.46,
+      x,
+      y - h / 2
+    );
+    ctx.closePath();
+    return;
+  }
+
+  ctx.moveTo(x, y - h / 2);
+  ctx.bezierCurveTo(
+    x + w * 0.46,
+    y - h * 0.30,
+    x + w * 0.42,
+    y + h * 0.28,
+    x + w * 0.25,
+    y + h * 0.45
+  );
+  ctx.bezierCurveTo(
+    x + w * 0.10,
+    y + h * 0.55,
+    x - w * 0.10,
+    y + h * 0.55,
+    x - w * 0.25,
+    y + h * 0.45
+  );
+  ctx.bezierCurveTo(
+    x - w * 0.42,
+    y + h * 0.28,
+    x - w * 0.46,
+    y - h * 0.30,
+    x,
+    y - h / 2
+  );
+  ctx.closePath();
 }
 
-function hideNails() {
-  nailMeshes.forEach(mesh => {
-    mesh.visible = false;
-  });
+function roundedRect(x, y, w, h, r) {
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
 }
 
-function hideDebugPoints() {
-  debugMeshes.forEach(dot => {
-    dot.visible = false;
-  });
+function drawDebugPoint(x, y) {
+  ctx.fillStyle = "#00ff99";
+  ctx.beginPath();
+  ctx.arc(x, y, 4.5, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawNoHandMessage() {
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = "rgba(0,0,0,0.55)";
+  ctx.fillRect(25, 25, 420, 55);
+  ctx.fillStyle = "white";
+  ctx.font = "22px Arial";
+  ctx.fillText("Show your hand to try nail polish", 45, 60);
+  ctx.restore();
 }
 
 function capturePreview() {
-  if (!latestFrameReady) {
+  if (!latestImage) {
     alert("Start the camera first.");
     return;
   }
 
-  const captureCanvas = document.createElement("canvas");
-  const context = captureCanvas.getContext("2d");
-
-  const width = wrapper.clientWidth;
-  const height = wrapper.clientHeight;
-
-  captureCanvas.width = width;
-  captureCanvas.height = height;
-
-  context.save();
-  context.translate(width, 0);
-  context.scale(-1, 1);
-  context.drawImage(video, 0, 0, width, height);
-  context.restore();
-
-  context.drawImage(canvas, 0, 0, width, height);
-
-  capturedImage.src = captureCanvas.toDataURL("image/png");
+  capturedImage.src = latestImage;
   capturedImage.classList.remove("hidden");
 }
 
 function saveDesign() {
   const settings = getSettings();
 
-  localStorage.setItem("saved3DNailDesign", JSON.stringify(settings));
+  localStorage.setItem("savedNailTryOnDesign", JSON.stringify(settings));
 
-  alert("3D nail design saved!");
+  alert("Nail try-on design saved!");
+}
+
+function distance(a, b) {
+  return Math.sqrt(
+    Math.pow(a.x - b.x, 2) +
+    Math.pow(a.y - b.y, 2)
+  );
+}
+
+function lerp(a, b, t) {
+  return a + (b - a) * t;
+}
+
+function lerpAngle(a, b, t) {
+  let diff = b - a;
+
+  while (diff > Math.PI) diff -= Math.PI * 2;
+  while (diff < -Math.PI) diff += Math.PI * 2;
+
+  return a + diff * t;
+}
+
+function lightenColor(hex, amount) {
+  const color = parseInt(hex.replace("#", ""), 16);
+
+  let r = (color >> 16) + amount;
+  let g = ((color >> 8) & 255) + amount;
+  let b = color & 255;
+
+  b += amount;
+
+  r = Math.min(255, r);
+  g = Math.min(255, g);
+  b = Math.min(255, b);
+
+  return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+}
+
+function darkenColor(hex, amount) {
+  const color = parseInt(hex.replace("#", ""), 16);
+
+  let r = (color >> 16) - amount;
+  let g = ((color >> 8) & 255) - amount;
+  let b = (color & 255) - amount;
+
+  r = Math.max(0, r);
+  g = Math.max(0, g);
+  b = Math.max(0, b);
+
+  return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
 }

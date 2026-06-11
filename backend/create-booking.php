@@ -19,8 +19,6 @@ $full_name = trim($_POST["full_name"] ?? "");
 $service_type = trim($_POST["service_type"] ?? "");
 $booking_date = trim($_POST["booking_date"] ?? "");
 $booking_time = trim($_POST["booking_time"] ?? "");
-$payment_method = trim($_POST["payment_method"] ?? "");
-$payment_reference = trim($_POST["payment_reference"] ?? "");
 $amount = $_POST["amount"] ?? 0;
 $notes = trim($_POST["notes"] ?? "");
 
@@ -29,8 +27,6 @@ if (
     $service_type === "" ||
     $booking_date === "" ||
     $booking_time === "" ||
-    $payment_method === "" ||
-    $payment_reference === "" ||
     $amount <= 0
 ) {
     echo "<script>
@@ -40,15 +36,59 @@ if (
     exit;
 }
 
-if ($payment_method !== "GCash" && $payment_method !== "PayPal") {
+$allowed_times = [
+    "10:00",
+    "11:00",
+    "12:00",
+    "13:00",
+    "14:00",
+    "15:00",
+    "16:00",
+    "17:00",
+    "18:00",
+    "19:00",
+    "20:00",
+    "21:00"
+];
+
+$booking_time_short = substr($booking_time, 0, 5);
+
+if (!in_array($booking_time_short, $allowed_times)) {
     echo "<script>
-        alert('Invalid payment method.');
-        window.location.href='../booking.php';
+        alert('Invalid booking time. Please choose between 10:00 AM and 9:00 PM.');
+        window.location.href='../booking.php?date=" . $booking_date . "';
     </script>";
     exit;
 }
 
-$payment_status = "Paid";
+/*
+  This prevents double booking.
+  If another user already picked the same date and time,
+  and that booking is still Pending or Approved,
+  the new booking will be blocked.
+*/
+$check = $conn->prepare("
+    SELECT id 
+    FROM bookings 
+    WHERE booking_date = ? 
+    AND TIME_FORMAT(booking_time, '%H:%i') = ? 
+    AND status IN ('Pending', 'Approved')
+");
+$check->bind_param("ss", $booking_date, $booking_time_short);
+$check->execute();
+$check_result = $check->get_result();
+
+if ($check_result->num_rows > 0) {
+    echo "<script>
+        alert('This time slot is already booked. Please choose another available time.');
+        window.location.href='../booking.php?date=" . $booking_date . "';
+    </script>";
+    exit;
+}
+
+$payment_method = "Physical";
+$payment_status = "To Pay";
+$payment_reference = null;
 $status = "Pending";
 
 $stmt = $conn->prepare("
@@ -64,7 +104,7 @@ $stmt->bind_param(
     $email,
     $service_type,
     $booking_date,
-    $booking_time,
+    $booking_time_short,
     $payment_method,
     $payment_status,
     $payment_reference,
@@ -75,13 +115,13 @@ $stmt->bind_param(
 
 if ($stmt->execute()) {
     echo "<script>
-        alert('Booking submitted successfully! Payment successful. Please wait for admin approval.');
+        alert('Booking submitted successfully! Payment will be made physically at the salon.');
         window.location.href='../booking-history.php';
     </script>";
 } else {
     echo "<script>
         alert('Booking failed. Please try again.');
-        window.location.href='../booking.php';
+        window.location.href='../booking.php?date=" . $booking_date . "';
     </script>";
 }
 

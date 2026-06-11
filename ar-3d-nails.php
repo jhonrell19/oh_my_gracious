@@ -24,6 +24,7 @@ if ($_SESSION["role"] !== "user") {
 
 <header class="navbar">
   <div class="logo">3D AR Nail Try-On</div>
+  <p>Start the camera, show your hand, and nail polish will appear on your fingernails.</p>
   <nav>
     <a href="user-dashboard.php">Dashboard</a>
     <a href="booking.php">Book</a>
@@ -41,9 +42,9 @@ if ($_SESSION["role"] !== "user") {
 
     <section class="ar-3d-camera-section">
       <div class="ar-3d-camera-wrapper" id="arWrapper">
-        <video id="inputVideo" autoplay playsinline></video>
-        <canvas id="threeCanvas"></canvas>
-      </div>
+  <video id="inputVideo" autoplay playsinline></video>
+  <canvas id="threeCanvas"></canvas>
+</div>
 
       <div class="camera-buttons">
         <button class="btn" id="startBtn">Start Camera</button>
@@ -77,7 +78,7 @@ if ($_SESSION["role"] !== "user") {
       </select>
 
       <label>Nail Size</label>
-      <input type="range" id="nailSize" min="0.3" max="1.3" step="0.05" value="0.55">
+      <input type="range" id="nailSize" min="0.6" max="2.0" step="0.05" value="1.25">  
 
       <label>Vertical Position</label>
       <input type="range" id="verticalOffset" min="-80" max="80" step="1" value="0">
@@ -103,7 +104,8 @@ if ($_SESSION["role"] !== "user") {
 
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
-<script type="module" src="js/ar-3d-nails.js"></script>
+<script src="js/ar-3d-nails.js?v=999"></script>
 
 </body>
 </html>
+

@@ -36,6 +36,7 @@ $bookings = $stmt->get_result();
     <a href="user-dashboard.php">Dashboard</a>
     <a href="booking.php">Book</a>
     <a href="booking-history.php">History</a>
+    <a href="ar-3d-nails.php">3D AR Nails</a>
     <a href="logout.php" class="logout-btn">Logout</a>
   </nav>
 </header>
@@ -52,7 +53,6 @@ $bookings = $stmt->get_result();
         <th>Payment</th>
         <th>Payment Status</th>
         <th>Amount</th>
-        <th>Reference</th>
         <th>Booking Status</th>
       </tr>
     </thead>
@@ -63,15 +63,14 @@ $bookings = $stmt->get_result();
           <tr>
             <td><?php echo htmlspecialchars($row["service_type"]); ?></td>
             <td><?php echo htmlspecialchars($row["booking_date"]); ?></td>
-            <td><?php echo htmlspecialchars($row["booking_time"]); ?></td>
+            <td><?php echo date("g:i A", strtotime($row["booking_time"])); ?></td>
             <td><?php echo htmlspecialchars($row["payment_method"]); ?></td>
             <td>
-              <span class="status paid">
+              <span class="status topay">
                 <?php echo htmlspecialchars($row["payment_status"]); ?>
               </span>
             </td>
             <td>₱<?php echo htmlspecialchars($row["amount"]); ?></td>
-            <td><?php echo htmlspecialchars($row["payment_reference"]); ?></td>
             <td>
               <span class="status <?php echo strtolower($row["status"]); ?>">
                 <?php echo htmlspecialchars($row["status"]); ?>
@@ -81,7 +80,7 @@ $bookings = $stmt->get_result();
         <?php } ?>
       <?php } else { ?>
         <tr>
-          <td colspan="8">No bookings yet.</td>
+          <td colspan="7">No bookings yet.</td>
         </tr>
       <?php } ?>
     </tbody>
