@@ -1,0 +1,9 @@
+{
+  "name": "oh-my-gracious/salon-system",
+  "description": "OH MY GRACIOUS nail salon management and AR try-on system",
+  "require": {
+    "php": ">=8.1",
+    "ext-mysqli": "*",
+    "ext-curl": "*"
+  }
+}

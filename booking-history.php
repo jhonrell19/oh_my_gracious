@@ -1,91 +1,9 @@
 <?php
-session_start();
-include "backend/db.php";
-
-if (!isset($_SESSION["user_id"])) {
-    header("Location: login.html");
-    exit;
-}
-
-if ($_SESSION["role"] !== "user") {
-    header("Location: admin-dashboard.php");
-    exit;
-}
-
-$user_id = $_SESSION["user_id"];
-
-$stmt = $conn->prepare("SELECT * FROM bookings WHERE user_id = ? ORDER BY created_at DESC");
-$stmt->bind_param("i", $user_id);
-$stmt->execute();
-$bookings = $stmt->get_result();
+require_once __DIR__.'/backend/authorization.php';
+require_once __DIR__.'/backend/db.php';
+require_once __DIR__.'/backend/csrf.php';
+requireCustomer();$uid=(int)$_SESSION['user_id'];
+$stmt=$conn->prepare("SELECT b.*,p.method AS p_method,p.status AS p_status,p.reference_number,p.gateway,p.checkout_url,GROUP_CONCAT(bi.service_name ORDER BY bi.id SEPARATOR ', ') services FROM bookings b LEFT JOIN payments p ON p.booking_id=b.id LEFT JOIN booking_items bi ON bi.booking_id=b.id WHERE b.user_id=? GROUP BY b.id ORDER BY b.booking_date DESC,b.booking_time DESC");$stmt->bind_param('i',$uid);$stmt->execute();$bookings=$stmt->get_result();
 ?>
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Booking History</title>
-  <link rel="stylesheet" href="css/style.css">
-</head>
-<body>
-
-<header class="navbar">
-  <div class="logo">Booking History</div>
-  <nav>
-    <a href="user-dashboard.php">Dashboard</a>
-    <a href="booking.php">Book</a>
-    <a href="booking-history.php">History</a>
-    <a href="ar-3d-nails.php">3D AR Nails</a>
-    <a href="logout.php" class="logout-btn">Logout</a>
-  </nav>
-</header>
-
-<main class="dashboard">
-  <h1>Your Booking History</h1>
-
-  <table>
-    <thead>
-      <tr>
-        <th>Service</th>
-        <th>Date</th>
-        <th>Time</th>
-        <th>Payment</th>
-        <th>Payment Status</th>
-        <th>Amount</th>
-        <th>Booking Status</th>
-      </tr>
-    </thead>
-
-    <tbody>
-      <?php if ($bookings->num_rows > 0) { ?>
-        <?php while ($row = $bookings->fetch_assoc()) { ?>
-          <tr>
-            <td><?php echo htmlspecialchars($row["service_type"]); ?></td>
-            <td><?php echo htmlspecialchars($row["booking_date"]); ?></td>
-            <td><?php echo date("g:i A", strtotime($row["booking_time"])); ?></td>
-            <td><?php echo htmlspecialchars($row["payment_method"]); ?></td>
-            <td>
-              <span class="status topay">
-                <?php echo htmlspecialchars($row["payment_status"]); ?>
-              </span>
-            </td>
-            <td>₱<?php echo htmlspecialchars($row["amount"]); ?></td>
-            <td>
-              <span class="status <?php echo strtolower($row["status"]); ?>">
-                <?php echo htmlspecialchars($row["status"]); ?>
-              </span>
-            </td>
-          </tr>
-        <?php } ?>
-      <?php } else { ?>
-        <tr>
-          <td colspan="7">No bookings yet.</td>
-        </tr>
-      <?php } ?>
-    </tbody>
-  </table>
-</main>
-
-</body>
-</html>
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Booking History | Oh My Gracious</title><link rel="stylesheet" href="css/style.css"></head><body><header class="navbar"><div class="logo">Oh My Gracious</div><nav><a href="user-dashboard.php">Dashboard</a><a href="booking.php">Book</a><a class="active" href="booking-history.php">History</a><a href="saved-designs.php">Saved Designs</a><a href="account.php">My Account</a><a href="logout.php" class="logout-btn">Logout</a></nav></header><main class="page-wrap"><div class="page-heading"><div><p class="eyebrow">MY APPOINTMENTS</p><h1>Booking History</h1><p>Track appointment and payment status from one place.</p></div><a class="btn primary" href="booking.php">New Booking</a></div><?php if(isset($_GET['created'])):?><div class="alert success">Booking request submitted successfully.</div><?php endif;?><?php if(isset($_GET['cancelled'])):?><div class="alert success">Booking cancelled.</div><?php endif;?><?php if(!empty($_GET['payment_error'])):?><div class="alert warning"><?=h((string)$_GET['payment_error'])?></div><?php endif;?><?php if(!empty($_GET['error'])):?><div class="alert error"><?=h((string)$_GET['error'])?></div><?php endif;?>
+<div class="table-card"><div class="table-scroll"><table><thead><tr><th>Date & Time</th><th>Services</th><th>Total</th><th>Appointment</th><th>Payment</th><th>Actions</th></tr></thead><tbody><?php if(!$bookings->num_rows):?><tr><td colspan="6" class="empty-cell">No bookings yet.</td></tr><?php endif;?><?php while($b=$bookings->fetch_assoc()):?><?php $pstatus=$b['p_status']?:$b['payment_status'];$pmethod=$b['p_method']?:$b['payment_method'];?><tr><td><strong><?=h(date('M j, Y',strtotime($b['booking_date'])))?></strong><br><span class="muted"><?=h(date('g:i A',strtotime($b['booking_time'])))?></span></td><td><?=h($b['services']?:$b['service_type'])?><br><span class="muted"><?= (int)$b['total_duration_minutes']?> min</span></td><td>₱<?=number_format((float)$b['amount'],2)?></td><td><span class="status <?=h(strtolower(str_replace([' ','-'],'',$b['status'])))?>"><?=h($b['status'])?></span></td><td><strong><?=h($pmethod)?></strong><br><span class="status neutral"><?=h($pstatus)?></span><?php if($b['reference_number']):?><br><small>Ref: <?=h($b['reference_number'])?></small><?php endif;?></td><td><div class="action-stack"><?php if($pstatus==='Paid'):?><a class="btn ghost small" href="receipt.php?id=<?= (int)$b['id']?>">Receipt</a><?php elseif(($b['gateway']??'')==='paymongo'&&!in_array($b['status'],['Rejected','Cancelled'],true)):?><form method="POST" action="backend/create-paymongo-checkout.php"><?=csrfInput()?><input type="hidden" name="booking_id" value="<?= (int)$b['id']?>"><button class="btn approve small" type="submit">Pay Online</button></form><?php endif;?><?php if(in_array($b['status'],['Pending','Approved'],true)&&$b['booking_date']>=date('Y-m-d')&&$pstatus!=='Paid'):?><form method="POST" action="backend/cancel-booking.php" onsubmit="return confirm('Cancel this appointment?')"><?=csrfInput()?><input type="hidden" name="booking_id" value="<?= (int)$b['id']?>"><button class="btn danger small" type="submit">Cancel</button></form><?php endif;?></div></td></tr><?php endwhile;?></tbody></table></div></div></main></body></html>

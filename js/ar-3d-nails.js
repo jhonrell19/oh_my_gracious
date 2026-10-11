@@ -13,6 +13,9 @@ const nailFinishInput = document.getElementById("nailFinish");
 const nailSizeInput = document.getElementById("nailSize");
 const verticalOffsetInput = document.getElementById("verticalOffset");
 const showDebugInput = document.getElementById("showDebug");
+const nailDepthInput = document.getElementById("nailDepth");
+const designNameInput = document.getElementById("designName");
+const arMessage = document.getElementById("arMessage");
 
 let hands = null;
 let camera = null;
@@ -46,6 +49,7 @@ function getSettings() {
     finish: nailFinishInput.value,
     size: parseFloat(nailSizeInput.value),
     verticalOffset: parseFloat(verticalOffsetInput.value),
+    depth: parseFloat(nailDepthInput.value),
     showDebug: showDebugInput.value === "yes"
   };
 }
@@ -159,8 +163,9 @@ function drawNailPolish(landmarks) {
       nailHeight *= 0.9;
     }
 
-    const targetX = tip.x - unitX * upperLength * finger.shift;
-    const targetY = tip.y - unitY * upperLength * finger.shift + settings.verticalOffset;
+    const depthAdjust = settings.depth * 0.004 * upperLength;
+    const targetX = tip.x - unitX * upperLength * finger.shift - unitX * depthAdjust;
+    const targetY = tip.y - unitY * upperLength * finger.shift - unitY * depthAdjust + settings.verticalOffset;
 
     const targetAngle = Math.atan2(dy, dx) - Math.PI / 2;
 
@@ -398,12 +403,31 @@ function capturePreview() {
   capturedImage.classList.remove("hidden");
 }
 
-function saveDesign() {
+async function saveDesign() {
   const settings = getSettings();
-
-  localStorage.setItem("savedNailTryOnDesign", JSON.stringify(settings));
-
-  alert("Nail try-on design saved!");
+  const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+  const form = new FormData();
+  form.append('csrf_token', csrf);
+  form.append('design_name', designNameInput.value.trim() || 'Saved AR Design');
+  form.append('nail_color', settings.color);
+  form.append('nail_shape', settings.shape);
+  form.append('nail_finish', settings.finish);
+  form.append('nail_size', String(settings.size));
+  form.append('vertical_offset', String(settings.verticalOffset));
+  form.append('depth_value', String(settings.depth));
+  if (latestImage) form.append('preview_image', latestImage);
+  try {
+    const response = await fetch('backend/save-design.php', { method: 'POST', body: form, headers: { Accept: 'application/json' } });
+    const result = await response.json();
+    arMessage.className = 'alert ' + result.status;
+    arMessage.textContent = result.message;
+    if (result.status === 'success') {
+      localStorage.setItem('savedNailTryOnDesign', JSON.stringify(settings));
+    }
+  } catch (error) {
+    arMessage.className = 'alert error';
+    arMessage.textContent = 'Design could not be saved.';
+  }
 }
 
 function distance(a, b) {

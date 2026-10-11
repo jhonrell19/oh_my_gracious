@@ -1,0 +1,18 @@
+# Environment secrets
+.env
+
+# Composer packages - rebuilt with composer install
+/vendor/
+
+# User-generated uploads
+/uploads/*
+!/uploads/.htaccess
+!/uploads/.gitkeep
+
+# Local database dump - may contain user data/password hashes
+oh_my_gracious.sql
+
+# Logs / temporary files
+*.log
+.DS_Store
+Thumbs.db

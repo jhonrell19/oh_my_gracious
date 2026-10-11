@@ -1,0 +1,26 @@
+<?php
+require_once __DIR__.'/backend/authorization.php';
+require_once __DIR__.'/backend/db.php';
+require_once __DIR__.'/backend/csrf.php';
+requireSuperAdmin();
+$message='';$type='success';
+if($_SERVER['REQUEST_METHOD']==='POST'){
+  verifyCsrf();
+  $action=(string)($_POST['action']??'');
+  if($action==='save'){
+    $id=(int)($_POST['service_id']??0);$name=trim((string)($_POST['service_name']??''));$desc=trim((string)($_POST['description']??''));$price=(float)($_POST['price']??0);$duration=(int)($_POST['duration_minutes']??0);$status=in_array($_POST['status']??'active',['active','inactive'],true)?$_POST['status']:'active';
+    if($name===''||$price<0||$duration<15){$message='Enter a valid service name, price, and duration.';$type='error';}
+    else{
+      try{
+        if($id>0){$s=$conn->prepare('UPDATE services SET service_name=?,description=?,price=?,duration_minutes=?,status=? WHERE id=?');$s->bind_param('ssdisi',$name,$desc,$price,$duration,$status,$id);$s->execute();audit($conn,'service_updated','service',$id);}
+        else{$s=$conn->prepare('INSERT INTO services(service_name,description,price,duration_minutes,status,display_order) VALUES (?,?,?,?,?,999)');$s->bind_param('ssdis',$name,$desc,$price,$duration,$status);$s->execute();audit($conn,'service_created','service',(int)$conn->insert_id);}
+        $message='Service saved.';
+      }catch(Throwable $e){$message='Service could not be saved. The name may already exist.';$type='error';}
+    }
+  }elseif($action==='toggle'){
+    $id=(int)($_POST['service_id']??0);$status=(string)($_POST['status']??'inactive');if($id>0&&in_array($status,['active','inactive'],true)){$s=$conn->prepare('UPDATE services SET status=? WHERE id=?');$s->bind_param('si',$status,$id);$s->execute();audit($conn,'service_status_'.$status,'service',$id);$message='Service status updated.';}
+  }
+}
+$services=$conn->query('SELECT * FROM services ORDER BY display_order,service_name');
+?>
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Services & Pricing | Oh My Gracious</title><link rel="stylesheet" href="css/style.css"></head><body><header class="navbar"><div class="logo">Owner Console</div><nav><a href="super-admin-dashboard.php">Dashboard</a><a href="revenue-reports.php">Revenue</a><a class="active" href="services-management.php">Services</a><a href="technician-management.php">Technicians</a><a href="admin-management.php">Staff Admins</a><a href="system-settings.php">Settings</a><a href="audit-logs.php">Activity</a><a href="logout.php" class="logout-btn">Logout</a></nav></header><main class="page-wrap"><div class="page-heading"><div><p class="eyebrow">SERVICE CATALOG</p><h1>Services & Pricing</h1><p>Booking prices and appointment durations come from this database-managed catalog.</p></div></div><?php if($message):?><div class="alert <?=$type?>"><?=h($message)?></div><?php endif;?><section class="panel"><h2>Add Service</h2><form method="POST" class="form-grid four"><?=csrfInput()?><input type="hidden" name="action" value="save"><div class="field"><label>Name</label><input name="service_name" required></div><div class="field"><label>Price (PHP)</label><input name="price" type="number" min="0" step="0.01" required></div><div class="field"><label>Duration (minutes)</label><input name="duration_minutes" type="number" min="15" step="15" value="60" required></div><div class="field"><label>Status</label><select name="status"><option value="active">Active</option><option value="inactive">Inactive</option></select></div><div class="field span-4"><label>Description</label><input name="description"></div><div class="span-4"><button class="btn primary">Add Service</button></div></form></section><section class="panel"><h2>Current Services</h2><div class="table-scroll"><table><thead><tr><th>Service</th><th>Description</th><th>Price</th><th>Duration</th><th>Status</th><th>Update</th></tr></thead><tbody><?php while($s=$services->fetch_assoc()):?><?php $formId='service-form-'.(int)$s['id']; ?><tr><td><input form="<?=h($formId)?>" name="service_name" value="<?=h($s['service_name'])?>"></td><td><input form="<?=h($formId)?>" name="description" value="<?=h($s['description'])?>"></td><td><input form="<?=h($formId)?>" name="price" type="number" step="0.01" value="<?=h($s['price'])?>"></td><td><input form="<?=h($formId)?>" name="duration_minutes" type="number" step="15" value="<?= (int)$s['duration_minutes']?>"></td><td><select form="<?=h($formId)?>" name="status"><option value="active" <?=$s['status']==='active'?'selected':''?>>Active</option><option value="inactive" <?=$s['status']==='inactive'?'selected':''?>>Inactive</option></select></td><td><form id="<?=h($formId)?>" method="POST"><?=csrfInput()?><input type="hidden" name="action" value="save"><input type="hidden" name="service_id" value="<?= (int)$s['id']?>"><button class="btn secondary tiny">Save</button></form></td></tr><?php endwhile;?></tbody></table></div></section></main></body></html>

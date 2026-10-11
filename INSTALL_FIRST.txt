@@ -1,0 +1,13 @@
+OH MY GRACIOUS — INSTALL FIRST
+
+1. BACK UP your existing C:\xampp\htdocs\oh_my_gracious folder and export the current MySQL database.
+2. Replace the old application files with this upgraded oh_my_gracious folder.
+3. Copy .env.example to .env and keep your real secrets only in .env.
+4. In phpMyAdmin, select the EXISTING oh_my_gracious database and run database/upgrade_existing_database.sql ONCE.
+   DO NOT import production_schema.sql over a database containing data you want to keep.
+5. Ensure the owner account role is super_admin (see README_SETUP.md).
+6. Open http://localhost/oh_my_gracious/tools/health-check.php and resolve any red/missing items.
+7. Test customer registration/login, receptionist login, owner login, booking, multiple services, and cash payment first.
+8. Add provider credentials one at a time for Google, Facebook, Twilio, and PayMongo. PayMongo webhooks require a public HTTPS URL (or HTTPS tunnel during local testing).
+
+Read README_SETUP.md before deployment.

@@ -1,115 +1,33 @@
-function showRegister() {
-  document.getElementById("formTitle").innerText = "User Register";
-  document.getElementById("loginForm").classList.add("hidden");
-  document.getElementById("registerForm").classList.remove("hidden");
-}
+let authConfig = { csrf_token: '', google_enabled:false, facebook_enabled:false, phone_enabled:false };
 
-function showLogin() {
-  document.getElementById("formTitle").innerText = "User Login";
-  document.getElementById("registerForm").classList.add("hidden");
-  document.getElementById("loginForm").classList.remove("hidden");
-}
+const $ = (id) => document.getElementById(id);
+function showMessage(message, type='error', link=null){const box=$('authMessage');box.className='alert '+type;box.innerHTML='';box.append(document.createTextNode(message));if(link){const a=document.createElement('a');a.href=link;a.textContent=' Open link';a.className='alert-link';box.appendChild(a);}}
+function hideMessage(){const box=$('authMessage');box.className='alert hidden';box.textContent='';}
+function showRegister(){hideMessage();$('formTitle').textContent='Create Your Account';$('formSubtitle').textContent='Complete your customer profile';$('loginForm').classList.add('hidden');$('phoneForm').classList.add('hidden');$('registerForm').classList.remove('hidden');}
+function showLogin(){hideMessage();$('formTitle').textContent='Welcome Back';$('formSubtitle').textContent='Sign in to continue';$('registerForm').classList.add('hidden');$('phoneForm').classList.add('hidden');$('loginForm').classList.remove('hidden');}
+function showPhoneLogin(mode='login'){hideMessage();$('phoneMode').value=mode;$('formTitle').textContent=mode==='register'?'Register with Phone':'Phone Sign-In';$('formSubtitle').textContent=mode==='register'?'Verify your phone, then complete your profile':'Verify your registered phone number';$('phoneHelp').textContent=mode==='register'?'Enter a new phone number. After the OTP is verified, you will complete your customer profile.':'Use the phone number already registered to your account. We will send a one-time verification code.';$('loginForm').classList.add('hidden');$('registerForm').classList.add('hidden');$('phoneForm').classList.remove('hidden');}
+function strongPassword(p){return p.length>=8&&/[A-Z]/.test(p)&&/[a-z]/.test(p)&&/[0-9]/.test(p)&&/[^A-Za-z0-9]/.test(p);}
+function withCsrf(fd){fd.append('csrf_token',authConfig.csrf_token);return fd;}
+async function jsonPost(url,fd){const r=await fetch(url,{method:'POST',body:fd,headers:{'Accept':'application/json'}});let data;try{data=await r.json();}catch{throw new Error('The server returned an invalid response.');}return data;}
 
-function isStrongPassword(password) {
-  const hasMinimumLength = password.length >= 8;
-  const hasUppercase = /[A-Z]/.test(password);
-  const hasLowercase = /[a-z]/.test(password);
-  const hasNumber = /[0-9]/.test(password);
-  const hasSpecialCharacter = /[^A-Za-z0-9]/.test(password);
+async function loadConfig(){const r=await fetch('backend/public-config.php',{headers:{Accept:'application/json'}});authConfig=await r.json();if(!authConfig.facebook_enabled){$('facebookButton').disabled=true;document.querySelectorAll('.facebook-register').forEach(b=>b.disabled=true);}if(!authConfig.phone_enabled){$('phoneButton').disabled=true;document.querySelectorAll('.phone-register').forEach(b=>b.disabled=true);}initializeGoogle();initializeFacebook();}
+async function loadTechnicians(){try{const r=await fetch('backend/technicians.php');const data=await r.json();if(data.status==='success')data.technicians.forEach(t=>{const o=document.createElement('option');o.value=t.id;o.textContent=t.full_name+(t.specialization?' — '+t.specialization:'');$('registerTechnician').appendChild(o);});}catch(e){console.error(e);}}
 
-  return (
-    hasMinimumLength &&
-    hasUppercase &&
-    hasLowercase &&
-    hasNumber &&
-    hasSpecialCharacter
-  );
-}
+async function userLogin(){hideMessage();const id=$('loginIdentifier').value.trim(),pw=$('loginPassword').value;if(!id||!pw)return showMessage('Enter your email and password.');const fd=withCsrf(new FormData());fd.append('identifier',id);fd.append('password',pw);try{const d=await jsonPost('backend/user-login.php',fd);if(d.status==='success')location.href=d.redirect;else showMessage(d.message);}catch(e){showMessage(e.message);}}
+async function registerUser(){hideMessage();const full=$('registerFullName').value.trim(),email=$('registerEmail').value.trim(),phone=$('registerPhone').value.trim(),pw=$('registerPassword').value,cp=$('registerConfirmPassword').value;if(!full||!email||!phone||!pw||!cp)return showMessage('Complete all required fields.');if(!strongPassword(pw))return showMessage('Password does not meet the security rules.');if(pw!==cp)return showMessage('Passwords do not match.');if(!$('registerConsent').checked)return showMessage('Please confirm the privacy/account terms.');const fd=withCsrf(new FormData());[['full_name',full],['email',email],['phone_number',phone],['password',pw],['confirm_password',cp],['date_of_birth',$('registerDob').value],['preferred_technician_id',$('registerTechnician').value],['nail_preferences',$('registerNailPreferences').value.trim()],['allergy_notes',$('registerAllergies').value.trim()]].forEach(([k,v])=>fd.append(k,v));try{const d=await jsonPost('backend/register.php',fd);if(d.status==='success')showMessage(d.message,'success',d.verification_url||null);else showMessage(d.message);}catch(e){showMessage(e.message);}}
 
-async function registerUser() {
-  const fullName = document.getElementById("registerFullName").value.trim();
-  const email = document.getElementById("registerEmail").value.trim();
-  const password = document.getElementById("registerPassword").value;
+function initializeGoogle(){if(!authConfig.google_enabled)return;if(typeof google==='undefined'||!google.accounts){setTimeout(initializeGoogle,300);return;}google.accounts.id.initialize({client_id:authConfig.google_client_id,callback:handleGoogle});['googleButton','googleRegisterButton'].forEach(id=>{const el=$(id);if(el)google.accounts.id.renderButton(el,{theme:'outline',size:'large',text:id==='googleRegisterButton'?'signup_with':'continue_with',shape:'rectangular',width:360});});}
+async function handleGoogle(response){const fd=withCsrf(new FormData());fd.append('credential',response.credential);try{const d=await jsonPost('backend/google-auth.php',fd);if(d.status==='success')location.href=d.redirect;else showMessage(d.message);}catch(e){showMessage(e.message);}}
 
-  if (fullName === "" || email === "" || password === "") {
-    alert("Please complete all fields.");
-    return;
-  }
+function initializeFacebook(){if(!authConfig.facebook_enabled)return;window.fbAsyncInit=function(){FB.init({appId:authConfig.facebook_app_id,cookie:true,xfbml:false,version:authConfig.facebook_graph_version});};if(typeof FB!=='undefined')window.fbAsyncInit();}
+function startFacebookLogin(){hideMessage();if(!authConfig.facebook_enabled)return showMessage('Facebook login is not configured yet.');if(typeof FB==='undefined')return showMessage('Facebook login is still loading.');FB.login(res=>{if(!res.authResponse)return showMessage('Facebook login was cancelled.');sendFacebookToken(res.authResponse.accessToken);},{scope:'public_profile,email'});}
+async function sendFacebookToken(token){const fd=withCsrf(new FormData());fd.append('access_token',token);try{const d=await jsonPost('backend/facebook-auth.php',fd);if(d.status==='success')location.href=d.redirect;else showMessage(d.message);}catch(e){showMessage(e.message);}}
 
-  if (!isStrongPassword(password)) {
-    alert("Password must have at least 8 characters, 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character.");
-    return;
-  }
+async function sendPhoneOtp(){hideMessage();const phone=$('phoneAuthNumber').value.trim();if(!phone)return showMessage('Enter your registered phone number.');const fd=withCsrf(new FormData());fd.append('phone_number',phone);fd.append('mode',$('phoneMode').value);try{const d=await jsonPost('backend/send-phone-otp.php',fd);if(d.status==='success'){$('otpSection').classList.remove('hidden');showMessage(d.message,'success');}else showMessage(d.message);}catch(e){showMessage(e.message);}}
+async function verifyPhoneOtp(){hideMessage();const fd=withCsrf(new FormData());fd.append('phone_number',$('phoneAuthNumber').value.trim());fd.append('code',$('phoneOtp').value.trim());fd.append('mode',$('phoneMode').value);try{const d=await jsonPost('backend/verify-phone-otp.php',fd);if(d.status==='success')location.href=d.redirect;else showMessage(d.message);}catch(e){showMessage(e.message);}}
 
-  const formData = new FormData();
-  formData.append("full_name", fullName);
-  formData.append("email", email);
-  formData.append("password", password);
-
-  const response = await fetch("backend/register.php", {
-    method: "POST",
-    body: formData
-  });
-
-  const result = await response.json();
-
-  alert(result.message);
-
-  if (result.status === "success") {
-    showLogin();
-  }
-}
-
-async function userLogin() {
-  const email = document.getElementById("loginEmail").value.trim();
-  const password = document.getElementById("loginPassword").value;
-
-  if (email === "" || password === "") {
-    alert("Please enter your email and password.");
-    return;
-  }
-
-  const formData = new FormData();
-  formData.append("email", email);
-  formData.append("password", password);
-
-  const response = await fetch("backend/user-login.php", {
-    method: "POST",
-    body: formData
-  });
-
-  const result = await response.json();
-
-  alert(result.message);
-
-  if (result.status === "success") {
-    window.location.href = result.redirect;
-  }
-}
-
-async function adminLogin() {
-  const email = document.getElementById("adminEmail").value.trim();
-  const password = document.getElementById("adminPassword").value;
-
-  if (email === "" || password === "") {
-    alert("Please enter admin email and password.");
-    return;
-  }
-
-  const formData = new FormData();
-  formData.append("email", email);
-  formData.append("password", password);
-
-  const response = await fetch("backend/admin-login.php", {
-    method: "POST",
-    body: formData
-  });
-
-  const result = await response.json();
-
-  alert(result.message);
-
-  if (result.status === "success") {
-    window.location.href = result.redirect;
-  }
-}
+document.addEventListener('DOMContentLoaded',()=>{
+  $('showRegisterBtn').addEventListener('click',showRegister);$('showLoginBtn').addEventListener('click',showLogin);document.querySelectorAll('.back-login').forEach(b=>b.addEventListener('click',showLogin));$('loginButton').addEventListener('click',userLogin);$('registerButton').addEventListener('click',registerUser);$('facebookButton').addEventListener('click',startFacebookLogin);document.querySelectorAll('.facebook-register').forEach(b=>b.addEventListener('click',startFacebookLogin));$('phoneButton').addEventListener('click',()=>showPhoneLogin('login'));document.querySelectorAll('.phone-register').forEach(b=>b.addEventListener('click',()=>showPhoneLogin('register')));$('sendOtpButton').addEventListener('click',sendPhoneOtp);$('verifyOtpButton').addEventListener('click',verifyPhoneOtp);$('showLoginPassword').addEventListener('change',e=>$('loginPassword').type=e.target.checked?'text':'password');
+  const params=new URLSearchParams(location.search);if(params.get('verified')==='1')showMessage('Email verified. You can sign in now.','success');
+  if(location.hash==='#register')showRegister();Promise.all([loadConfig(),loadTechnicians()]).catch(console.error);
+});

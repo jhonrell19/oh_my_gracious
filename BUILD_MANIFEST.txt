@@ -1,0 +1,36 @@
+OH MY GRACIOUS — PRODUCTION/PANEL UPGRADE BUILD
+Build date: 2026-10-11
+
+This build was prepared from the latest project ZIP supplied in the conversation and upgrades the application around the panel revisions.
+
+CORE FEATURES
+- Detailed customer registration and profile management
+- One login for customer / receptionist / owner
+- Google, Facebook, and phone OTP integration endpoints
+- Customer email verification + password reset flow
+- Database-driven services/prices and multiple services per booking
+- Duration-aware scheduling and unique slot claims
+- Cash at Salon + PayMongo Hosted Checkout architecture
+- Verified PayMongo webhook; browser return cannot mark online payment Paid
+- Front desk dashboard, statistics, customers, booking creation, approval/check-in/completion
+- Owner dashboard, revenue, services, technicians, admin staff, settings, audit logs
+- AR nail try-on calibration/capture/save and booking attachment
+- Responsive UI refresh
+- CSRF, rate limiting, audit logs, secure sessions, prepared statements, environment configuration
+
+INSTALLATION
+Read INSTALL_FIRST.txt and README_SETUP.md before replacing the old project.
+For an EXISTING database, run database/upgrade_existing_database.sql ONCE.
+For a completely NEW database only, use database/production_schema.sql.
+
+QA COMPLETED IN BUILD ENVIRONMENT
+- PHP syntax lint for all PHP files
+- JavaScript syntax check for all JS files
+- Static href/src/form-action target check
+
+LIMITATIONS / EXTERNAL SETUP
+- Google / Facebook / Twilio / PayMongo require your own provider credentials.
+- PayMongo webhook testing requires a public HTTPS callback URL or HTTPS tunnel.
+- Production email delivery requires hosting mail/SMTP configuration.
+- AR remains MediaPipe hand-landmark based, not commercial nail-segmentation quality.
+- External providers were not live-tested because this build does not contain your private credentials.

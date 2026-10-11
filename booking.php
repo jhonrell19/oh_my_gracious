@@ -1,152 +1,31 @@
 <?php
-session_start();
-include "backend/db.php";
+require_once __DIR__.'/backend/authorization.php';
+require_once __DIR__.'/backend/db.php';
+require_once __DIR__.'/backend/csrf.php';
+requireCustomer();
 
-if (!isset($_SESSION["user_id"])) {
-    header("Location: login.html");
-    exit;
-}
-
-if ($_SESSION["role"] !== "user") {
-    header("Location: admin-dashboard.php");
-    exit;
-}
-
-$selected_date = $_GET["date"] ?? date("Y-m-d");
-
-$booked_times = [];
-
-$stmt = $conn->prepare("
-    SELECT booking_time 
-    FROM bookings 
-    WHERE booking_date = ? 
-    AND status IN ('Pending', 'Approved')
-");
-$stmt->bind_param("s", $selected_date);
-$stmt->execute();
-$result = $stmt->get_result();
-
-while ($row = $result->fetch_assoc()) {
-    $booked_times[] = substr($row["booking_time"], 0, 5);
-}
-
-$time_slots = [
-    "10:00" => "10:00 AM",
-    "11:00" => "11:00 AM",
-    "12:00" => "12:00 PM",
-    "13:00" => "1:00 PM",
-    "14:00" => "2:00 PM",
-    "15:00" => "3:00 PM",
-    "16:00" => "4:00 PM",
-    "17:00" => "5:00 PM",
-    "18:00" => "6:00 PM",
-    "19:00" => "7:00 PM",
-    "20:00" => "8:00 PM",
-    "21:00" => "9:00 PM"
-];
+$services=$conn->query("SELECT id,service_name,description,price,duration_minutes FROM services WHERE status='active' ORDER BY display_order,service_name");
+$designStmt=$conn->prepare('SELECT id,design_name,nail_color,nail_shape,nail_finish FROM saved_designs WHERE user_id=? ORDER BY created_at DESC');
+$uid=(int)$_SESSION['user_id'];$designStmt->bind_param('i',$uid);$designStmt->execute();$designs=$designStmt->get_result();
+$open=getSetting($conn,'open_time','10:00');$close=getSetting($conn,'close_time','22:00');$days=(int)getSetting($conn,'booking_days_ahead','90');$prefDesign=(int)($_GET['design_id']??0);$selectedDate=(string)($_GET['date']??date('Y-m-d'));
+$paymongo=paymongoEnabled();
 ?>
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Book Appointment</title>
-  <link rel="stylesheet" href="css/style.css">
-</head>
-<body>
-
-<header class="navbar">
-  <div class="logo">Book Appointment</div>
-  <nav>
-    <a href="user-dashboard.php">Dashboard</a>
-    <a href="booking.php">Book</a>
-    <a href="booking-history.php">History</a>
-    <a href="ar-3d-nails.php">3D AR Nails</a>
-    <a href="logout.php" class="logout-btn">Logout</a>
-  </nav>
-</header>
-
-<main class="form-container">
-  <h2>Book Your Nail Appointment</h2>
-
-  <div class="payment-box">
-    <h3>Salon Schedule</h3>
-    <p><strong>Open:</strong> 10:00 AM</p>
-    <p><strong>Close:</strong> 10:00 PM</p>
-    <p><strong>Payment:</strong> Physical payment at the salon only.</p>
-    <p>Note: Booked time slots are disabled until the admin marks the booking as Completed or Rejected.</p>
-  </div>
-
-  <form method="GET" action="booking.php">
-    <label>Choose Date First</label>
-    <input type="date" name="date" value="<?php echo htmlspecialchars($selected_date); ?>" required>
-    <button type="submit" class="btn full secondary">Check Available Times</button>
-  </form>
-
-  <hr>
-
-  <form action="backend/create-booking.php" method="POST">
-
-    <input type="hidden" name="booking_date" value="<?php echo htmlspecialchars($selected_date); ?>">
-
-    <label>Full Name</label>
-    <input type="text" name="full_name" value="<?php echo htmlspecialchars($_SESSION["full_name"]); ?>" required>
-
-    <label>Service Type</label>
-    <select name="service_type" id="serviceType" onchange="updateAmount()" required>
-      <option value="">Select service</option>
-      <option value="Manicure" data-price="250">Manicure - ₱250</option>
-      <option value="Pedicure" data-price="300">Pedicure - ₱300</option>
-      <option value="Gel Polish" data-price="500">Gel Polish - ₱500</option>
-      <option value="Nail Extension" data-price="800">Nail Extension - ₱800</option>
-      <option value="Nail Art" data-price="600">Nail Art - ₱600</option>
-    </select>
-
-    <label>Amount</label>
-    <input type="text" id="amountDisplay" value="₱0" readonly>
-    <input type="hidden" name="amount" id="amountInput" value="0">
-
-    <label>Selected Date</label>
-    <input type="text" value="<?php echo htmlspecialchars($selected_date); ?>" readonly>
-
-    <label>Available Time</label>
-    <select name="booking_time" required>
-      <option value="">Select available time</option>
-
-      <?php foreach ($time_slots as $value => $label) { ?>
-        <?php if (in_array($value, $booked_times)) { ?>
-          <option value="<?php echo $value; ?>" disabled>
-            <?php echo $label; ?> - Already Booked
-          </option>
-        <?php } else { ?>
-          <option value="<?php echo $value; ?>">
-            <?php echo $label; ?> - Available
-          </option>
-        <?php } ?>
-      <?php } ?>
-    </select>
-
-    <label>Payment Method</label>
-    <input type="text" value="Physical Payment at Salon" readonly>
-
-    <label>Additional Notes</label>
-    <textarea name="notes" placeholder="Example: pink nails, short length, flower design"></textarea>
-
-    <button type="submit" class="btn full">Submit Booking Request</button>
-  </form>
-</main>
-
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Book Appointment | Oh My Gracious</title><link rel="stylesheet" href="css/style.css"></head><body>
+<header class="navbar"><div class="logo">Oh My Gracious</div><nav><a href="user-dashboard.php">Dashboard</a><a class="active" href="booking.php">Book</a><a href="booking-history.php">History</a><a href="saved-designs.php">Saved Designs</a><a href="account.php">My Account</a><a href="logout.php" class="logout-btn">Logout</a></nav></header>
+<main class="page-wrap narrow"><div class="page-heading"><div><p class="eyebrow">APPOINTMENTS</p><h1>Build your salon visit</h1><p>Select one or more services. Price and duration are calculated securely from the salon database.</p></div></div>
+<?php if(!empty($_GET['error'])):?><div class="alert error"><?=h((string)$_GET['error'])?></div><?php endif;?>
+<form id="bookingForm" action="backend/create-booking.php" method="POST" class="panel stack-lg"><?=csrfInput()?>
+<section><div class="section-heading"><div><h2>1. Choose services</h2><p>Multiple services can be combined in one appointment.</p></div></div><div class="service-grid">
+<?php while($s=$services->fetch_assoc()):?><label class="service-option"><input class="service-check" type="checkbox" name="service_ids[]" value="<?= (int)$s['id']?>" data-price="<?=h($s['price'])?>" data-duration="<?= (int)$s['duration_minutes']?>"><span><strong><?=h($s['service_name'])?></strong><small><?=h($s['description'])?></small><b>₱<?=number_format((float)$s['price'],2)?> · <?= (int)$s['duration_minutes']?> min</b></span></label><?php endwhile;?>
+</div><div class="booking-summary"><div><span>Estimated duration</span><strong id="durationText">0 min</strong></div><div><span>Total</span><strong id="totalText">₱0.00</strong></div></div></section>
+<section><h2>2. Date and available time</h2><div class="form-grid two"><div class="field"><label>Date</label><input id="bookingDate" name="booking_date" type="date" min="<?=date('Y-m-d')?>" max="<?=date('Y-m-d',strtotime('+'.$days.' days'))?>" value="<?=h($selectedDate)?>" required></div><div class="field"><label>Available Time</label><select id="bookingTime" name="booking_time" required><option value="">Select services and date first</option></select></div></div><p class="field-help">Salon hours: <?=date('g:i A',strtotime($open))?>–<?=date('g:i A',strtotime($close))?>. The system blocks overlapping slots, including multi-service appointments.</p></section>
+<section><h2>3. Design preference</h2><div class="form-grid two"><div class="field"><label>Saved AR Design</label><select name="selected_design_id"><option value="">No saved design</option><?php while($d=$designs->fetch_assoc()):?><option value="<?= (int)$d['id']?>" <?= $prefDesign===(int)$d['id']?'selected':''?>><?=h($d['design_name'].' — '.$d['nail_shape'].' '.$d['nail_finish'])?></option><?php endwhile;?></select></div><div class="field"><label>Notes</label><textarea name="notes" rows="3" placeholder="Length, colors, special requests, etc."></textarea></div></div></section>
+<section><h2>4. Payment method</h2><div class="payment-methods"><label class="payment-option"><input type="radio" name="payment_method" value="Cash" checked><span><strong>Cash at Salon</strong><small>Pay at the front desk during your visit.</small></span></label><label class="payment-option <?=$paymongo?'':'disabled-option'?>"><input type="radio" name="payment_method" value="PayMongo" <?=$paymongo?'':'disabled'?>><span><strong>Online via PayMongo</strong><small><?= $paymongo?'Secure hosted checkout for available methods such as GCash, Maya, Card, and QRPh.':'Online payment will appear after the salon configures its PayMongo test/live key.'?></small></span></label></div><p class="field-help">Online payment is confirmed only by PayMongo's verified webhook. Your browser return page never marks a payment as paid by itself.</p></section>
+<button class="btn primary full" type="submit">Submit Booking Request</button></form></main>
 <script>
-function updateAmount() {
-  const serviceSelect = document.getElementById("serviceType");
-  const selectedOption = serviceSelect.options[serviceSelect.selectedIndex];
-  const price = selectedOption.getAttribute("data-price") || 0;
-
-  document.getElementById("amountDisplay").value = "₱" + price;
-  document.getElementById("amountInput").value = price;
-}
-</script>
-
-</body>
-</html>
+const checks=[...document.querySelectorAll('.service-check')],dateEl=document.getElementById('bookingDate'),timeEl=document.getElementById('bookingTime'),totalEl=document.getElementById('totalText'),durationEl=document.getElementById('durationText');
+function selectedIds(){return checks.filter(c=>c.checked).map(c=>c.value)}
+function updateSummary(){let total=0,dur=0;checks.forEach(c=>{if(c.checked){total+=Number(c.dataset.price);dur+=Number(c.dataset.duration)}});totalEl.textContent='₱'+total.toFixed(2);durationEl.textContent=dur+' min';loadTimes();}
+async function loadTimes(){const ids=selectedIds();timeEl.innerHTML='<option value="">Loading availability…</option>';if(!ids.length||!dateEl.value){timeEl.innerHTML='<option value="">Select services and date first</option>';return;}try{const r=await fetch('backend/available-times.php?date='+encodeURIComponent(dateEl.value)+'&service_ids='+ids.join(','));const d=await r.json();timeEl.innerHTML='';if(d.status!=='success'||!d.times.length){timeEl.innerHTML='<option value="">No available times</option>';return;}timeEl.append(new Option('Select available time',''));d.times.forEach(t=>timeEl.append(new Option(t.label,t.value)));}catch(e){timeEl.innerHTML='<option value="">Availability unavailable</option>';}}
+checks.forEach(c=>c.addEventListener('change',updateSummary));dateEl.addEventListener('change',loadTimes);document.getElementById('bookingForm').addEventListener('submit',e=>{if(!selectedIds().length){e.preventDefault();alert('Select at least one service.')}});updateSummary();
+</script></body></html>
