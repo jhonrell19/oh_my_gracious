@@ -1,36 +1,57 @@
-OH MY GRACIOUS — PRODUCTION/PANEL UPGRADE BUILD
-Build date: 2026-10-11
+OH MY GRACIOUS - VERSION 3.0 PRE-PAYMENT
 
-This build was prepared from the latest project ZIP supplied in the conversation and upgrades the application around the panel revisions.
+Core roles
+- Customer (user)
+- Front Desk / Receptionist (admin)
+- Owner / Manager (super_admin)
 
-CORE FEATURES
-- Detailed customer registration and profile management
-- One login for customer / receptionist / owner
-- Google, Facebook, and phone OTP integration endpoints
-- Customer email verification + password reset flow
-- Database-driven services/prices and multiple services per booking
-- Duration-aware scheduling and unique slot claims
-- Cash at Salon + PayMongo Hosted Checkout architecture
-- Verified PayMongo webhook; browser return cannot mark online payment Paid
-- Front desk dashboard, statistics, customers, booking creation, approval/check-in/completion
-- Owner dashboard, revenue, services, technicians, admin staff, settings, audit logs
-- AR nail try-on calibration/capture/save and booking attachment
-- Responsive UI refresh
-- CSRF, rate limiting, audit logs, secure sessions, prepared statements, environment configuration
+Authentication
+- One login page for all roles
+- Email/password registration/login
+- Google registration/login using Google Identity Services
+- Google duplicate prevention by provider ID + verified email + DB unique constraints
+- New Google accounts forced to customer role
+- No Google auto-linking to privileged staff/owner accounts
+- Facebook authentication removed
+- Phone/SMS authentication removed
+- Phone number retained only as contact information
 
-INSTALLATION
-Read INSTALL_FIRST.txt and README_SETUP.md before replacing the old project.
-For an EXISTING database, run database/upgrade_existing_database.sql ONCE.
-For a completely NEW database only, use database/production_schema.sql.
+Booking operations
+- Multiple services in one appointment
+- Server-side service price calculation
+- Fixed booking times: 9, 10, 11 AM and 1-7 PM
+- Configurable capacity per time
+- Transactional capacity reservation
+- Fully booked / closed / passed time handling
+- Front desk daily slot close/open and capacity override
+- Front desk service availability control with reason
+- Estimated duration informational only
+- Existing-customer and guest/walk-in front-desk booking
+- Front-desk reschedule, approve, reject, cancel, no-show, check-in, complete
 
-QA COMPLETED IN BUILD ENVIRONMENT
-- PHP syntax lint for all PHP files
-- JavaScript syntax check for all JS files
-- Static href/src/form-action target check
+Payments
+- Pay at Salon / Cash only in this release
+- Manual front-desk Paid status + printable receipt
+- Online payment integration intentionally removed/deferred
 
-LIMITATIONS / EXTERNAL SETUP
-- Google / Facebook / Twilio / PayMongo require your own provider credentials.
-- PayMongo webhook testing requires a public HTTPS callback URL or HTTPS tunnel.
-- Production email delivery requires hosting mail/SMTP configuration.
-- AR remains MediaPipe hand-landmark based, not commercial nail-segmentation quality.
-- External providers were not live-tested because this build does not contain your private credentials.
+Owner
+- Revenue summaries from recorded Paid transactions
+- Service category/name/price/duration catalog
+- Technician management
+- Admin account management
+- Fixed slot/default capacity settings
+- Audit logs
+
+Security / deployment foundations
+- Role authorization
+- CSRF
+- password_hash/password_verify
+- prepared statements
+- login rate limiting
+- secure session configuration
+- server-side price validation
+- .env excluded from package/Git
+- no public admin registration
+- no hard-coded production credentials
+
+- PRE_PAYMENT_TEST_CHECKLIST.md — role/booking/security UAT before online payments

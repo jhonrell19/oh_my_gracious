@@ -1,3 +1,8 @@
+-- LEGACY BASELINE MIGRATION (v2).
+-- If your database already has the panel-production upgrade, DO NOT run this file again.
+-- For the current capacity-scheduler + Google-only upgrade, run:
+-- database/migrations/2026_10_pre_payment_capacity_google_only.sql
+
 -- BACK UP YOUR DATABASE BEFORE RUNNING THIS FILE.
 USE oh_my_gracious;
 

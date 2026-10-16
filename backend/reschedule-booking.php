@@ -1,0 +1,7 @@
+<?php
+
+declare(strict_types=1);
+require_once __DIR__.'/authorization.php';require_once __DIR__.'/csrf.php';require_once __DIR__.'/booking-helper.php';requireRegularAdmin();verifyCsrf();
+$id=(int)($_POST['booking_id']??0);$date=trim((string)($_POST['booking_date']??''));$time=normalizeSlotTime((string)($_POST['booking_time']??''));if($id<=0||!validBookingDate($conn,$date)||$time==='')redirectTo('admin-bookings.php?error='.urlencode('Invalid reschedule request.'));
+try{$conn->begin_transaction();$s=$conn->prepare("SELECT id,status,booking_date,booking_time FROM bookings WHERE id=? FOR UPDATE");$s->bind_param('i',$id);$s->execute();$b=$s->get_result()->fetch_assoc();if(!$b||!in_array($b['status'],['Pending','Approved'],true))throw new RuntimeException('Booking cannot be rescheduled.');if($b['booking_date']===$date&&substr($b['booking_time'],0,5)===substr($time,0,5)){$conn->commit();redirectTo('admin-bookings.php?updated=1');}
+releaseBookingCapacity($conn,$id);reserveCapacitySlot($conn,$date,$time,$id);$u=$conn->prepare('UPDATE bookings SET booking_date=?,booking_time=? WHERE id=?');$u->bind_param('ssi',$date,$time,$id);$u->execute();audit($conn,'booking_rescheduled','booking',$id,['date'=>$date,'time'=>$time]);$conn->commit();redirectTo('admin-bookings.php?updated=1');}catch(Throwable $e){try{$conn->rollback();}catch(Throwable $ignored){}error_log('Reschedule: '.$e->getMessage());redirectTo('admin-bookings.php?error='.urlencode($e->getMessage()));}

@@ -171,8 +171,3 @@ function httpPostJson(string $url, array $payload, array $headers = [], ?array $
     }
     return $data;
 }
-
-function paymongoEnabled(): bool
-{
-    return defined('PAYMONGO_SECRET_KEY') && PAYMONGO_SECRET_KEY !== '';
-}

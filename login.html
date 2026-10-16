@@ -11,11 +11,11 @@
   <section class="auth-brand-panel">
     <a href="index.html" class="brand-mark">OH MY GRACIOUS</a>
     <div>
-      <p class="eyebrow">NAIL SALON EXPERIENCE</p>
-      <h1>Book, personalize, and preview your next nail look.</h1>
-      <p>One account gives customers access to appointments, saved AR designs, preferences, and booking history.</p>
+      <p class="eyebrow">SALON EXPERIENCE</p>
+      <h1>Book, personalize, and manage your salon visits.</h1>
+      <p>Customers can book available services, save nail looks, and manage appointment history from one account.</p>
     </div>
-    <p class="muted-light">Staff and owners use this same secure sign-in. Access is determined automatically by account role.</p>
+    <p class="muted-light">Customers, front-desk staff, and owners use the same secure sign-in. The server determines access from the account role.</p>
   </section>
 
   <section class="auth-card">
@@ -31,23 +31,26 @@
       <input id="loginIdentifier" type="email" autocomplete="username" placeholder="name@example.com">
       <label for="loginPassword">Password</label>
       <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Enter password">
-      <div class="form-inline-between"><label class="check-row"><input type="checkbox" id="showLoginPassword"> Show password</label><span><a href="resend-verification.html">Resend verification</a> · <a href="forgot-password.html">Forgot password?</a></span></div>
-      <button id="loginButton" class="btn primary full" type="button">Sign In</button>
-      <div class="divider"><span>or continue with</span></div>
-      <div class="social-stack">
-        <div id="googleButton" class="google-slot"></div>
-        <button id="facebookButton" class="btn social facebook" type="button">ⓕ Continue with Facebook</button>
-        <button id="phoneButton" class="btn social" type="button">☎ Continue with Phone</button>
+      <div class="form-inline-between">
+        <label class="check-row"><input type="checkbox" id="showLoginPassword"> Show password</label>
+        <span><a href="resend-verification.html">Resend verification</a> · <a href="forgot-password.html">Forgot password?</a></span>
       </div>
+      <button id="loginButton" class="btn primary full" type="button">Sign In</button>
+      <div class="divider"><span>or</span></div>
+      <div class="google-auth-wrap">
+        <div id="googleButton" class="google-slot" aria-label="Continue with Google"></div>
+        <button id="googleDisabledLogin" class="btn social google-fallback full hidden" type="button" disabled><span class="google-g">G</span> Continue with Google</button>
+      </div>
+      <p class="field-help center-text">Google accounts are matched by verified Google email. The same Google account cannot create duplicate customer records.</p>
       <p class="auth-switch">Don't have an account? <button type="button" class="link-button" id="showRegisterBtn">Create Account</button></p>
     </div>
 
     <div id="registerForm" class="hidden">
-      <div class="section-kicker">Essential Registration Data</div>
+      <div class="section-kicker">Customer Registration</div>
       <div class="form-grid two">
         <div class="field span-2"><label for="registerFullName">Full Name *</label><input id="registerFullName" type="text" autocomplete="name" placeholder="Juan Dela Cruz"></div>
         <div class="field"><label for="registerEmail">Email Address *</label><input id="registerEmail" type="email" autocomplete="email" placeholder="name@example.com"></div>
-        <div class="field"><label for="registerPhone">Phone Number *</label><input id="registerPhone" type="tel" autocomplete="tel" placeholder="09XXXXXXXXX"></div>
+        <div class="field"><label for="registerPhone">Contact Number *</label><input id="registerPhone" type="tel" autocomplete="tel" placeholder="09XXXXXXXXX"></div>
         <div class="field"><label for="registerPassword">Password *</label><input id="registerPassword" type="password" autocomplete="new-password"></div>
         <div class="field"><label for="registerConfirmPassword">Confirm Password *</label><input id="registerConfirmPassword" type="password" autocomplete="new-password"></div>
       </div>
@@ -57,28 +60,21 @@
         <div class="field"><label for="registerDob">Date of Birth</label><input id="registerDob" type="date"></div>
         <div class="field"><label for="registerTechnician">Preferred Technician</label><select id="registerTechnician"><option value="">No preference</option></select></div>
         <div class="field span-2"><label for="registerNailPreferences">Nail Preferences</label><textarea id="registerNailPreferences" rows="3" placeholder="Example: short almond, gel polish, neutral colors"></textarea></div>
-        <div class="field span-2"><label for="registerAllergies">Allergies / Sensitivities</label><textarea id="registerAllergies" rows="3" placeholder="Optional: gel, acrylic, adhesive or polish sensitivities"></textarea></div>
+        <div class="field span-2"><label for="registerAllergies">Allergies / Sensitivities</label><textarea id="registerAllergies" rows="3" placeholder="Optional service safety notes"></textarea></div>
       </div>
       <label class="check-row privacy-consent"><input type="checkbox" id="registerConsent"> I confirm that the information is correct and agree to the salon's account and privacy terms.</label>
       <button id="registerButton" class="btn primary full" type="button">Create Customer Account</button>
       <div class="divider"><span>or register with</span></div>
-      <div class="social-stack"><div id="googleRegisterButton" class="google-slot"></div><button class="btn social facebook facebook-register" type="button">ⓕ Continue with Facebook</button><button class="btn social phone-register" type="button">☎ Continue with Phone</button></div>
+      <div class="google-auth-wrap">
+        <div id="googleRegisterButton" class="google-slot" aria-label="Sign up with Google"></div>
+        <button id="googleDisabledRegister" class="btn social google-fallback full hidden" type="button" disabled><span class="google-g">G</span> Sign up with Google</button>
+      </div>
+      <p class="field-help center-text">Google registration creates one customer account per verified Google identity/email. If the email already belongs to a customer, Google is linked to that same account instead of creating another.</p>
       <p class="auth-switch">Already have an account? <button type="button" class="link-button" id="showLoginBtn">Sign In</button></p>
-    </div>
-
-    <div id="phoneForm" class="hidden">
-      <input type="hidden" id="phoneMode" value="login">
-      <div class="section-kicker">Phone Verification</div>
-      <p id="phoneHelp" class="muted">Use the phone number already registered to your account. We'll send a one-time verification code.</p>
-      <label for="phoneAuthNumber">Phone Number</label><input type="tel" id="phoneAuthNumber" placeholder="09XXXXXXXXX">
-      <button id="sendOtpButton" class="btn primary full" type="button">Send Verification Code</button>
-      <div id="otpSection" class="hidden"><label for="phoneOtp">Verification Code</label><input type="text" id="phoneOtp" inputmode="numeric" maxlength="10" placeholder="Enter code"><button id="verifyOtpButton" class="btn primary full" type="button">Verify & Sign In</button></div>
-      <p class="auth-switch"><button type="button" class="link-button back-login">← Back to Sign In</button></p>
     </div>
   </section>
 </main>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
-<script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>
 <script src="js/auth.js"></script>
 </body>
 </html>
