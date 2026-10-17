@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/authorization.php';require_once __DIR__ . '/csrf.php';requireCustomer();verifyCsrf();
 $userId=(int)$_SESSION['user_id'];$current=(string)($_POST['current_password']??'');$new=(string)($_POST['new_password']??'');$confirm=(string)($_POST['confirm_password']??'');
 if($new!==$confirm||strlen($new)<8||!preg_match('/[A-Z]/',$new)||!preg_match('/[a-z]/',$new)||!preg_match('/[0-9]/',$new)||!preg_match('/[^A-Za-z0-9]/',$new))redirectTo('account.php?error='.urlencode('New password does not meet the security rules.'));

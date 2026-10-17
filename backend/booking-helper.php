@@ -11,7 +11,7 @@ function loadServicesByIds(mysqli $conn, array $ids, bool $forUpdate=false): arr
     if (!$ids) return [];
     $placeholders = implode(',', array_fill(0, count($ids), '?'));
     $types = str_repeat('i', count($ids));
-    $sql = "SELECT id,service_name,category,price,duration_minutes,booking_availability,unavailable_reason FROM services WHERE status='active' AND id IN ($placeholders)" . ($forUpdate ? " FOR UPDATE" : "");
+    $sql = "SELECT id,service_name,category,price,price_max,pricing_type,duration_minutes,booking_availability,unavailable_reason FROM services WHERE status='active' AND id IN ($placeholders)" . ($forUpdate ? " FOR UPDATE" : "");
     $stmt = $conn->prepare($sql);
     $stmt->bind_param($types, ...$ids);
     $stmt->execute();
@@ -29,15 +29,71 @@ function selectedServicesAreBookable(array $services): bool
     return true;
 }
 
-function bookingTotals(array $services): array
+function normalizeServiceQuantities(array $services, array $rawQuantities): array
+{
+    $out = [];
+    foreach ($services as $service) {
+        $id = (int)$service['id'];
+        $quantity = 1;
+
+        if (($service['pricing_type'] ?? 'fixed') === 'per_nail') {
+            $raw = $rawQuantities[$id] ?? $rawQuantities[(string)$id] ?? 1;
+            $quantity = max(1, min(10, (int)$raw));
+        }
+
+        $out[$id] = $quantity;
+    }
+
+    return $out;
+}
+
+function bookingTotals(array $services, array $quantities = []): array
 {
     $amount = 0.0;
     $duration = 0;
+    $estimated = false;
+
     foreach ($services as $service) {
-        $amount += (float)$service['price'];
+        $id = (int)$service['id'];
+        $pricingType = (string)($service['pricing_type'] ?? 'fixed');
+        $quantity = $pricingType === 'per_nail'
+            ? max(1, min(10, (int)($quantities[$id] ?? 1)))
+            : 1;
+
+        $amount += (float)$service['price'] * $quantity;
         $duration += max(0, (int)$service['duration_minutes']);
+
+        if ($pricingType === 'range') {
+            $estimated = true;
+        }
     }
-    return ['amount' => $amount, 'duration' => $duration];
+
+    return [
+        'amount' => $amount,
+        'duration' => $duration,
+        'estimated' => $estimated,
+    ];
+}
+
+function bookingServiceSummary(array $services, array $quantities = []): string
+{
+    $parts = [];
+
+    foreach ($services as $service) {
+        $id = (int)$service['id'];
+        $quantity = (($service['pricing_type'] ?? 'fixed') === 'per_nail')
+            ? max(1, min(10, (int)($quantities[$id] ?? 1)))
+            : 1;
+
+        $label = (string)$service['service_name'];
+        if ($quantity > 1) {
+            $label .= ' x' . $quantity;
+        }
+
+        $parts[] = $label;
+    }
+
+    return implode(', ', $parts);
 }
 
 function validBookingDate(mysqli $conn, string $date): bool

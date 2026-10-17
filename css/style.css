@@ -21,3 +21,20 @@ label{display:block;font-weight:750;font-size:13px;margin-bottom:6px}input,selec
 
 /* Capacity scheduler + Google-only auth */
 .center-text{text-align:center}.google-auth-wrap{display:grid;place-items:center;gap:8px}.google-fallback{max-width:360px}.google-g{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;font-weight:900;font-family:Arial,sans-serif;background:#fff;color:#4285f4;border:1px solid #ddd}.service-category-label{grid-column:1/-1;font-size:12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--rose-dark);padding:8px 2px 0}.service-option.unavailable{opacity:.62;background:#f4f1f1;cursor:not-allowed;border-style:dashed}.service-option.unavailable strong{text-decoration:line-through}.service-option em{display:block;color:var(--red);font-size:12px;font-style:normal;font-weight:800;margin-top:6px}.static-payment{cursor:default}.booking-summary small{display:block;color:var(--muted);font-size:11px;margin-top:3px}.inline-form input[type="date"]{width:auto}.status.noshow{background:var(--red-soft);color:var(--red)}
+
+
+/* Real salon service catalog */
+.service-filter-bar{display:grid;grid-template-columns:1fr minmax(180px,.4fr);gap:10px;margin:12px 0 18px}
+.service-option{flex-direction:column}
+.service-main{display:flex;gap:12px;margin:0;cursor:pointer}
+.service-main>input{flex:0 0 auto}
+.service-main>span{min-width:0}
+.service-quantity{border-top:1px solid var(--line);padding-top:10px;margin-top:4px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.service-quantity label{margin:0;color:var(--muted)}
+.service-quantity input{width:90px!important;margin:0!important}
+.range-price-note{color:var(--amber)!important;font-weight:700}
+.compact-empty{padding:20px;margin:10px 0}
+@media(max-width:620px){.service-filter-bar{grid-template-columns:1fr}.service-quantity{align-items:flex-start;flex-direction:column}}
+
+/* AI nail segmentation upgrade */
+.ar-ai-status{display:flex;align-items:center;gap:12px;text-align:left;background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:12px}.ar-ai-status strong{display:block}.ar-ai-status small{display:block;color:var(--muted);margin-top:2px}.ar-status-dot{width:11px;height:11px;border-radius:50%;flex:0 0 11px;background:#aaa;box-shadow:0 0 0 4px rgba(0,0,0,.04)}.ar-status-dot.loading{background:#d89d35}.ar-status-dot.ready{background:#2f8f64}.ar-status-dot.warning{background:#d89d35}.ar-status-dot.error{background:#bd3b4b}.ar-model-progress{height:7px;background:#eadde0;border-radius:999px;overflow:hidden;margin:-4px 2px 14px}.ar-model-progress-bar{height:100%;width:0;background:var(--rose-dark);border-radius:999px;transition:width .18s ease}.ar-live-stats{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:10px}.ar-live-stats span{background:var(--surface-soft);border:1px solid var(--line);padding:6px 10px;border-radius:999px;color:var(--muted);font-size:12px;font-weight:800}.control-divider{display:flex;align-items:center;gap:10px;margin:22px 0 12px;color:var(--rose-dark);font-size:11px;font-weight:900;letter-spacing:.11em;text-transform:uppercase}.control-divider:after{content:"";height:1px;background:var(--line);flex:1}.controls-panel label span{font-weight:700;color:var(--muted);font-size:12px}.ar-advanced-controls{border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:18px 0}.ar-advanced-controls summary{cursor:pointer;font-weight:900;color:var(--rose-dark)}.ar-advanced-controls[open] summary{margin-bottom:12px}.check-row{display:flex!important;gap:10px;align-items:flex-start}.check-row input{width:auto!important;margin-top:3px}.ar-stage-panel .button-row{justify-content:center}.ar-model-progress.hidden{display:none}

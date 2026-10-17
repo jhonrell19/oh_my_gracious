@@ -1,5 +1,5 @@
 OH MY GRACIOUS - PRE-PAYMENT OPERATIONAL UPGRADE
-Version: 3.0-prepayment
+Version: 3.1-half1-real-services
 
 IMPORTANT: BACK UP BOTH PROJECT FILES AND THE MYSQL DATABASE BEFORE UPGRADING.
 
@@ -11,8 +11,8 @@ EXISTING INSTALLATION (your current XAMPP project)
    - Keep your existing .git folder if you use Git.
    - DO NOT copy/commit a real .env to GitHub.
 5. If you do not already have .env, copy .env.example to .env.
-6. In phpMyAdmin, select oh_my_gracious and run ONCE:
-   database/migrations/2026_10_pre_payment_capacity_google_only.sql
+6. Confirm the previous capacity/Google migration was already applied. Then in phpMyAdmin, select oh_my_gracious and run ONCE:
+   database/migrations/2026_10_real_services_frontdesk_lockdown.sql
 7. Open:
    http://localhost/oh_my_gracious/tools/health-check.php
 8. Confirm all required database tables show green checks.
@@ -40,7 +40,10 @@ BOOKING MODEL IN THIS BUILD
 - Front desk can temporarily disable a service with a reason
 - Estimated service duration is informational only
 - Multiple services per appointment remain supported
-- Guest/walk-in front-desk bookings are supported
+- Real salon catalog/prices are seeded from the supplied menu photos
+- Owner can edit fixed, per-nail, and range prices
+- Per-nail services support 1-10 nail quantity
+- Front Desk booking creation is disabled; customers create their own appointments
 
 PAYMENTS
 - Online payment integration is intentionally NOT active yet.

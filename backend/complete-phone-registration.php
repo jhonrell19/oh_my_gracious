@@ -1,10 +1,7 @@
 <?php
-
-declare(strict_types=1);
-require_once __DIR__.'/db.php';require_once __DIR__.'/helpers.php';require_once __DIR__.'/csrf.php';verifyCsrf();
-$phone=(string)($_SESSION['verified_signup_phone']??'');$expires=(int)($_SESSION['verified_signup_phone_expires']??0);if($phone===''||$expires<time())redirectTo('login.html#register');$full=trim((string)($_POST['full_name']??''));$email=strtolower(trim((string)($_POST['email']??'')));$pw=(string)($_POST['password']??'');$confirm=(string)($_POST['confirm_password']??'');$dob=trim((string)($_POST['date_of_birth']??''));$prefs=trim((string)($_POST['nail_preferences']??''));$allergies=trim((string)($_POST['allergy_notes']??''));
-if($full===''||!filter_var($email,FILTER_VALIDATE_EMAIL)||$pw!==$confirm||strlen($pw)<8||!preg_match('/[A-Z]/',$pw)||!preg_match('/[a-z]/',$pw)||!preg_match('/[0-9]/',$pw)||!preg_match('/[^A-Za-z0-9]/',$pw))redirectTo('phone-register.php?error='.urlencode('Enter a valid name/email and strong matching password.'));
-$check=$conn->prepare('SELECT id FROM users WHERE email=? OR phone_number=? LIMIT 1');$check->bind_param('ss',$email,$phone);$check->execute();if($check->get_result()->num_rows)redirectTo('phone-register.php?error='.urlencode('Email or phone is already registered.'));
-$dobVal=null;if($dob!==''){$d=DateTime::createFromFormat('Y-m-d',$dob);if(!$d||$d->format('Y-m-d')!==$dob||$d>new DateTime('today'))redirectTo('phone-register.php?error='.urlencode('Invalid date of birth.'));$dobVal=$dob;}
-$hash=password_hash($pw,PASSWORD_DEFAULT);$role='user';$status='active';
-try{$conn->begin_transaction();$s=$conn->prepare('INSERT INTO users(full_name,email,phone_number,password_hash,date_of_birth,nail_preferences,allergy_notes,role,account_status,phone_verified_at) VALUES (?,?,?,?,?,?,?,?,?,NOW())');$s->bind_param('sssssssss',$full,$email,$phone,$hash,$dobVal,$prefs,$allergies,$role,$status);$s->execute();$id=(int)$conn->insert_id;$a=$conn->prepare("INSERT INTO auth_identities(user_id,provider,provider_user_id) VALUES (?,'phone',?),(?,'password',?)");$a->bind_param('isis',$id,$phone,$id,$email);$a->execute();$conn->commit();unset($_SESSION['verified_signup_phone'],$_SESSION['verified_signup_phone_expires']);$user=['id'=>$id,'full_name'=>$full,'email'=>$email,'phone_number'=>$phone,'role'=>'user','account_status'=>'active'];$result=createLoginSession($user);redirectTo($result['redirect']);}catch(Throwable $e){$conn->rollback();error_log('Phone registration: '.$e->getMessage());redirectTo('phone-register.php?error='.urlencode('Registration could not be completed.'));}
+http_response_code(410);
+header('Content-Type: application/json; charset=UTF-8');
+echo json_encode([
+    'status' => 'error',
+    'message' => 'Phone/SMS authentication has been removed. Phone number is used only as contact information.'
+]);

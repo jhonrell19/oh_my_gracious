@@ -35,7 +35,7 @@ Configure Google with `GOOGLE_CLIENT_ID` in `.env`. Never commit `.env`.
 
 - daily dashboard and appointment queue
 - create appointments for existing customers
-- create guest/walk-in appointments
+- manage customer-created appointments; front-desk booking creation is disabled
 - approve/reject/cancel/reschedule
 - check in / complete / mark no-show
 - record in-salon payment as Paid

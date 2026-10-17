@@ -26,7 +26,7 @@ Booking operations
 - Front desk daily slot close/open and capacity override
 - Front desk service availability control with reason
 - Estimated duration informational only
-- Existing-customer and guest/walk-in front-desk booking
+- Customer-created booking only; Front Desk creation route is disabled
 - Front-desk reschedule, approve, reject, cancel, no-show, check-in, complete
 
 Payments

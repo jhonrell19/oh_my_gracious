@@ -4,7 +4,7 @@ Use this checklist before enabling any online payment gateway.
 
 ## 1. Installation and database
 - [ ] Back up the current database before migration.
-- [ ] Existing installation: run `database/migrations/2026_10_pre_payment_capacity_google_only.sql` once.
+- [ ] Existing installation: confirm `database/migrations/2026_10_pre_payment_capacity_google_only.sql` was already run, then run `database/migrations/2026_10_real_services_frontdesk_lockdown.sql` once.
 - [ ] Fresh installation: import `database/production_schema.sql` instead.
 - [ ] Create `.env` from `.env.example` and keep `.env` out of Git.
 - [ ] `tools/health-check.php` shows all required tables/schema checks as green.
@@ -29,6 +29,8 @@ Use this checklist before enabling any online payment gateway.
 
 ## 4. Booking and capacity
 - [ ] Customer can select one or multiple available services.
+- [ ] Per-nail services accept quantity 1–10 and server-side totals match unit price × quantity.
+- [ ] Range-priced services show a starting/estimated total and are flagged as estimated.
 - [ ] Unavailable services are visible but disabled and show the reason.
 - [ ] Fixed booking times are shown: 9, 10, 11 AM and 1–7 PM.
 - [ ] Closed/past/full slots cannot be selected.
@@ -40,8 +42,8 @@ Use this checklist before enabling any online payment gateway.
 
 ## 5. Receptionist / Front Desk
 - [ ] Receptionist can access daily appointments but not owner pages.
-- [ ] Receptionist can create a booking for an existing customer.
-- [ ] Receptionist can create a guest/walk-in booking with name and phone.
+- [ ] Receptionist has no Create Booking action in the UI.
+- [ ] Direct access to the old front-desk create-booking page/backend is blocked/redirected.
 - [ ] Receptionist can approve/reject/reschedule/check in/complete/cancel/no-show.
 - [ ] Receptionist can mark an eligible Pay-at-Salon booking Paid.
 - [ ] Receptionist can disable/re-enable a service with a reason.
@@ -50,7 +52,7 @@ Use this checklist before enabling any online payment gateway.
 
 ## 6. Owner / Super Admin
 - [ ] Owner cannot enter receptionist-only daily booking pages.
-- [ ] Owner can manage services/categories/prices/estimated durations.
+- [ ] Owner can manage services/categories/pricing type/prices/range maximums/estimated durations.
 - [ ] Owner can manage technicians.
 - [ ] Owner can create/suspend/reactivate receptionist accounts.
 - [ ] Owner can configure default slot capacity and activate/deactivate fixed booking times.

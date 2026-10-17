@@ -42,3 +42,21 @@ Existing installations should run once:
 Fresh installations should use:
 
 `database/production_schema.sql`
+
+## 2026-10-17 — Half 1 Real Salon Catalog Finalization
+- Removed Front Desk booking creation from navigation and blocked the old page/backend route.
+- Added real salon service catalog/prices from supplied menu photos.
+- Added fixed, per-nail, and range pricing types.
+- Added booking-item quantity and line totals.
+- Added owner-editable range maximum and pricing type.
+- Added service search/category filtering to customer booking.
+- Disabled deprecated Facebook and phone/SMS authentication endpoints.
+
+## 2026-10-17 — AI Nail Mask Upgrade
+- Added local `models/nail-seg.onnx` segmentation model.
+- Replaced default fingertip oval rendering with AI-detected nail pixel masks.
+- Added per-finger MediaPipe tracking of the most recent AI nail masks for smoother movement between inference updates.
+- Added nail-mask confidence, coverage threshold, edge coverage boost, edge softness, and green diagnostic mask controls.
+- Added realistic polish blending modes: Natural, Glossy, Chrome, Matte, and Pearl.
+- Landmark overlay retained only as an optional fallback and is disabled by default.
+- AR inference now runs in the browser through ONNX Runtime Web; no Python inference server is required for this build.

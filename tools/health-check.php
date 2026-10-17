@@ -23,8 +23,9 @@ foreach ($tables as $table) {
 }
 
 $requiredColumns = [
-    'services' => ['category','booking_availability','unavailable_reason','duration_minutes'],
-    'bookings' => ['phone_number','booking_source','total_duration_minutes'],
+    'services' => ['category','booking_availability','unavailable_reason','duration_minutes','price_max','pricing_type'],
+    'bookings' => ['phone_number','booking_source','total_duration_minutes','amount_is_estimate'],
+    'booking_items' => ['quantity','line_total'],
     'users' => ['password_hash','role','account_status','last_login_at'],
 ];
 $columnResults = [];
@@ -46,6 +47,12 @@ $slotCount = 0;
 if ($tableResults['booking_time_slots']) {
     $r = $conn->query("SELECT COUNT(*) total FROM booking_time_slots WHERE status='active'");
     $slotCount = (int)$r->fetch_assoc()['total'];
+}
+
+$realCatalogCount = 0;
+if ($tableResults['services']) {
+    $r = $conn->query("SELECT COUNT(*) total FROM services WHERE status='active'");
+    $realCatalogCount = (int)$r->fetch_assoc()['total'];
 }
 ?>
 <!DOCTYPE html>
@@ -82,6 +89,7 @@ if ($tableResults['booking_time_slots']) {
     <?php endforeach; ?>
     <p><?=$googleUnique?'✅':'❌'?> Google identity duplicate guard</p>
     <p><?=$slotCount > 0?'✅':'❌'?> Active booking times: <?=h((string)$slotCount)?></p>
+    <p><?=$realCatalogCount >= 80?'✅':'⚠️'?> Active salon services: <?=h((string)$realCatalogCount)?></p>
   </section>
 
   <section class="panel">
