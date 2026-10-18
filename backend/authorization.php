@@ -12,6 +12,14 @@ function isSuperAdmin(): bool { return isLoggedIn() && $_SESSION['role'] === 'su
 function requireLogin(): void
 {
     if (!isLoggedIn()) redirectTo('login.html');
+    global $conn;
+    require_once __DIR__ . '/db.php';
+    $id = (int)$_SESSION['user_id'];
+    $s = $conn->prepare('SELECT role,account_status FROM users WHERE id=?');
+    $s->bind_param('i', $id); $s->execute(); $user = $s->get_result()->fetch_assoc();
+    if (!$user || $user['account_status'] !== 'active' || $user['role'] !== $_SESSION['role']) {
+        $_SESSION = []; session_destroy(); redirectTo('login.html');
+    }
 }
 
 function requireCustomer(): void

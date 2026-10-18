@@ -78,7 +78,9 @@ try {
     else {
         $subject = 'Verify your Oh My Gracious account';
         $message = "Welcome to Oh My Gracious. Verify your account here:\n\n" . $verificationUrl;
-        @mail($email, $subject, $message, 'From: ' . env('MAIL_FROM', 'no-reply@localhost'));
+        if (!sendAppMail($email, $subject, $message)) {
+            jsonResponse('error', 'Account created, but the verification email could not be sent. Please use Resend Verification or contact the salon.', [], 503);
+        }
     }
     jsonResponse('success', 'Account created. Please verify your email before signing in.', $extra);
 } catch (Throwable $e) {

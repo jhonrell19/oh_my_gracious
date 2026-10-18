@@ -13,6 +13,7 @@ function loadEnvFile(string $path): void
         if ((str_starts_with($value, '"') && str_ends_with($value, '"')) || (str_starts_with($value, "'") && str_ends_with($value, "'"))) {
             $value = substr($value, 1, -1);
         }
+        if (getenv($key) !== false) continue;
         $_ENV[$key] = $value;
         putenv($key . '=' . $value);
     }
@@ -33,3 +34,22 @@ date_default_timezone_set((string)APP_TIMEZONE);
 
 // Google is the only external/social authentication provider supported by this build.
 define('GOOGLE_CLIENT_ID', env('GOOGLE_CLIENT_ID', ''));
+
+
+define('PAYMONGO_SECRET_KEY', env('PAYMONGO_SECRET_KEY', ''));
+define('PAYMONGO_WEBHOOK_SECRET', env('PAYMONGO_WEBHOOK_SECRET', ''));
+define('PAYMONGO_PAYMENT_METHODS', env('PAYMONGO_PAYMENT_METHODS', 'gcash,paymaya,qrph,card'));
+function paymongoEnabled(): bool
+{
+    return env('PAYMONGO_ENABLED', 'false') === 'true'
+        && preg_match('/^sk_(test|live)_/', PAYMONGO_SECRET_KEY) === 1
+        && PAYMONGO_WEBHOOK_SECRET !== '';
+}
+if (APP_ENV === 'production') {
+    ini_set('display_errors', '0');
+    ini_set('log_errors', '1');
+    if (parse_url(APP_URL, PHP_URL_SCHEME) !== 'https') {
+        http_response_code(503);
+        exit('Production requires an HTTPS APP_URL.');
+    }
+}

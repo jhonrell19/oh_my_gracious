@@ -15,6 +15,7 @@ try {
         (int)env('DB_PORT', '3306')
     );
     $conn->set_charset('utf8mb4');
+    $conn->query("SET time_zone = '" . date('P') . "'");
 } catch (Throwable $e) {
     error_log('Database connection failed: ' . $e->getMessage());
     http_response_code(500);

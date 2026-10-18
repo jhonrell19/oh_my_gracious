@@ -251,7 +251,7 @@ function servicePriceText(array $service): string
                 <div class="payment-option static-payment">
                     <span>
                         <strong>Pay at Salon</strong>
-                        <small>Real online payment is the next integration phase. The current booking total is stored from owner-managed prices.</small>
+                        <small>Submit your appointment first. You can pay a fixed-price booking online from Booking History when online payment is enabled. Services with estimated prices are paid at the salon after the final price is confirmed.</small>
                     </span>
                 </div>
             </section>

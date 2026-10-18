@@ -1,3 +1,5 @@
+> Updated build: follow START_HERE_HALF2.md first. The older instructions below describe the previous build and are superseded where they conflict.
+
 # OH MY GRACIOUS Salon Management System
 
 ## Current release

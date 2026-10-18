@@ -6,6 +6,13 @@ $id=(int)($_POST['booking_id']??0);$action=(string)($_POST['action']??'');$allow
 if($id<=0||!in_array($action,$allowed,true))redirectTo('admin-bookings.php?error='.urlencode('Invalid action.'));
 try{
     $conn->begin_transaction();$s=$conn->prepare('SELECT b.id,b.status,b.payment_status FROM bookings b WHERE b.id=? FOR UPDATE');$s->bind_param('i',$id);$s->execute();$b=$s->get_result()->fetch_assoc();if(!$b){$conn->rollback();redirectTo('admin-bookings.php?error='.urlencode('Booking not found.'));}
+    if ($action === 'mark_paid') {
+        $p = $conn->prepare('SELECT gateway FROM payments WHERE booking_id=? FOR UPDATE');
+        $p->bind_param('i', $id); $p->execute();
+        if (($p->get_result()->fetch_assoc()['gateway'] ?? '') !== 'manual') {
+            throw new RuntimeException('Online payments must be confirmed by PayMongo.');
+        }
+    }
     $uid=(int)$_SESSION['user_id'];$release=false;
     if(in_array($action,['reject','cancel'],true)&&$b['payment_status']==='Paid'){
         $conn->rollback();redirectTo('admin-bookings.php?error='.urlencode('Paid appointments cannot be rejected or cancelled until payment/refund handling is resolved.'));

@@ -4,7 +4,7 @@ $status=trim((string)($_GET['status']??''));$date=trim((string)($_GET['date']??'
 $allowedStatuses=['Pending','Approved','Checked-in','Completed','Rejected','Cancelled','No-show'];
 if($status!==''&&in_array($status,$allowedStatuses,true)){$where[]='b.status=?';$params[]=$status;$types.='s';}
 if($date!==''){$where[]='b.booking_date=?';$params[]=$date;$types.='s';}
-$sql="SELECT b.*,p.method p_method,p.status p_status,p.reference_number,GROUP_CONCAT(CONCAT(bi.service_name,IF(bi.quantity>1,CONCAT(' x',bi.quantity),'')) ORDER BY bi.id SEPARATOR ', ') services FROM bookings b LEFT JOIN payments p ON p.booking_id=b.id LEFT JOIN booking_items bi ON bi.booking_id=b.id".($where?' WHERE '.implode(' AND ',$where):'')." GROUP BY b.id ORDER BY b.booking_date DESC,b.booking_time DESC";
+$sql="SELECT b.*,p.gateway p_gateway,p.method p_method,p.status p_status,p.reference_number,GROUP_CONCAT(CONCAT(bi.service_name,IF(bi.quantity>1,CONCAT(' x',bi.quantity),'')) ORDER BY bi.id SEPARATOR ', ') services FROM bookings b LEFT JOIN payments p ON p.booking_id=b.id LEFT JOIN booking_items bi ON bi.booking_id=b.id".($where?' WHERE '.implode(' AND ',$where):'')." GROUP BY b.id ORDER BY b.booking_date DESC,b.booking_time DESC";
 $stmt=$conn->prepare($sql);if($params)$stmt->bind_param($types,...$params);$stmt->execute();$bookings=$stmt->get_result();
 function actionForm($id,$action,$label,$class,$confirm=''){return '<form class="inline-form" method="POST" action="backend/update-booking-status.php"'.($confirm?' onsubmit="return confirm(\''.h($confirm).'\')"':'').'>'.csrfInput().'<input type="hidden" name="booking_id" value="'.(int)$id.'"><input type="hidden" name="action" value="'.h($action).'"><button type="submit" class="btn '.h($class).' tiny">'.h($label).'</button></form>';}
 ?>
@@ -27,6 +27,6 @@ function actionForm($id,$action,$label,$class,$confirm=''){return '<form class="
 <?php if($b['status']==='Pending'):?><?=actionForm($b['id'],'approve','Approve','approve')?><?=actionForm($b['id'],'reject','Reject','danger','Reject this booking?')?>
 <?php elseif($b['status']==='Approved'):?><?=actionForm($b['id'],'check_in','Check In','primary')?><?=actionForm($b['id'],'no_show','No-show','danger','Mark this customer as a no-show?')?><?=actionForm($b['id'],'cancel','Cancel','danger','Cancel this appointment?')?>
 <?php elseif($b['status']==='Checked-in'):?><?=actionForm($b['id'],'complete','Complete','primary')?><?php endif;?>
-<?php if($pstatus!=='Paid'&&in_array($b['status'],['Approved','Checked-in','Completed'],true)):?><?=actionForm($b['id'],'mark_paid','Mark Paid','approve','Confirm payment was received at the salon?')?><?php endif;?>
+<?php if($b['p_gateway']==='manual'&&$pstatus!=='Paid'&&in_array($b['status'],['Approved','Checked-in','Completed'],true)):?><?=actionForm($b['id'],'mark_paid','Mark Paid','approve','Confirm payment was received at the salon?')?><?php endif;?>
 <?php if($pstatus==='Paid'):?><a class="btn ghost tiny" href="receipt.php?id=<?= (int)$b['id']?>">Receipt</a><?php endif;?>
 </div></td></tr><?php endwhile;?></tbody></table></div></div></main></body></html>

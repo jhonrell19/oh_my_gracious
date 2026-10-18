@@ -1,9 +1,10 @@
 Options -Indexes
-<FilesMatch "^(\.env|composer\.(json|lock)|README.*|.*\.sql)$">
+<FilesMatch "(^\.|\.(sql|log|md|zip|bak|ini|lock)$|^composer\.json$|^BUILD_MANIFEST\.txt$|^INSTALL_FIRST\.txt$)">
     Require all denied
 </FilesMatch>
 <IfModule mod_headers.c>
     Header always set X-Content-Type-Options "nosniff"
     Header always set X-Frame-Options "SAMEORIGIN"
     Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Permissions-Policy "camera=(self), microphone=()"
 </IfModule>

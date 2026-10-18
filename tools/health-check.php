@@ -12,7 +12,8 @@ if (APP_ENV === 'production') {
 $tables = [
     'users','technicians','services','bookings','booking_items','booking_time_slots',
     'booking_slot_inventory','booking_slots','payments','saved_designs','auth_identities',
-    'email_verification_tokens','password_reset_tokens','system_settings','audit_logs','login_attempts'
+    'email_verification_tokens','password_reset_tokens','system_settings','audit_logs','login_attempts',
+    'payment_checkout_requests','payment_webhook_events'
 ];
 $tableResults = [];
 $stmt = $conn->prepare('SELECT COUNT(*) total FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name=?');

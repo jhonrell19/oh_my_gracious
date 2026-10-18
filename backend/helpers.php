@@ -171,3 +171,5 @@ function httpPostJson(string $url, array $payload, array $headers = [], ?array $
     }
     return $data;
 }
+
+require_once __DIR__ . '/mailer.php';

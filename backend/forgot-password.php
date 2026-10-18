@@ -17,6 +17,6 @@ if ($row) {
     $ins->bind_param('iss', $row['id'], $hash, $expires); $ins->execute();
     $url = appUrl('reset-password.php?token=' . urlencode($raw));
     if (APP_ENV !== 'production') $extra['reset_url'] = $url;
-    else @mail($email, 'Reset your Oh My Gracious password', "Reset your password here:\n\n".$url, 'From: '.env('MAIL_FROM','no-reply@localhost'));
+    else sendAppMail($email, 'Reset your Oh My Gracious password', "Reset your password here:\n\n".$url);
 }
 jsonResponse('success', 'If that email exists, a password reset link has been prepared.', $extra);

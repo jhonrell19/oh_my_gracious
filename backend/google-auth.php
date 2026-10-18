@@ -12,7 +12,10 @@ if ($credential === '') jsonResponse('error', 'Google credential missing.', [], 
 
 try {
     // Validate the Google Identity Services ID token against the configured Web Client ID.
-    $profile = httpGetJson('https://oauth2.googleapis.com/tokeninfo?id_token=' . urlencode($credential));
+    require_once dirname(__DIR__) . '/vendor/autoload.php';
+    $client = new Google\Client(['client_id' => GOOGLE_CLIENT_ID]);
+    $profile = $client->verifyIdToken($credential);
+    if (!is_array($profile)) throw new RuntimeException('Invalid Google token.');
     $audience = (string)($profile['aud'] ?? '');
     $issuer = (string)($profile['iss'] ?? '');
     $verified = in_array((string)($profile['email_verified'] ?? ''), ['true', '1'], true);
@@ -48,6 +51,10 @@ try {
         $existing = $stmt->get_result()->fetch_assoc();
 
         if ($existing) {
+            if (!str_ends_with($email, '@gmail.com') && empty($profile['hd'])) {
+                $conn->rollback();
+                jsonResponse('error', 'Use your password to sign in to this existing account. Automatic linking requires a Google-hosted email.', [], 403);
+            }
             // Google auto-linking is customer-only. Staff/owner accounts must keep deliberate password/admin provisioning.
             if (($existing['role'] ?? '') !== 'user') {
                 $conn->rollback();
