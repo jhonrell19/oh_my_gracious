@@ -50,10 +50,19 @@ function roleRedirect(string $role): string
 
 function createLoginSession(array $user): array
 {
-    if (($user['account_status'] ?? '') === 'suspended') {
+    if (($user['account_status'] ?? '') !== 'active') {
         return ['status' => 'error', 'message' => 'This account is suspended.'];
     }
     session_regenerate_id(true);
+    $_SESSION = [];
+    global $conn;
+    require_once __DIR__.'/security.php';
+    $security=securityRow($conn,(int)$user['id']);
+    $_SESSION['security_version']=(int)$security['session_version'];
+    $_SESSION['password_fingerprint']=hash('sha256',(string)($user['password_hash']??''));
+    $_SESSION['signed_in_at']=time();
+    $_SESSION['last_active_at']=time();
+    $_SESSION['mfa_verified']=false;
     $_SESSION['user_id'] = (int)$user['id'];
     $_SESSION['full_name'] = (string)$user['full_name'];
     $_SESSION['email'] = (string)($user['email'] ?? '');
@@ -62,6 +71,7 @@ function createLoginSession(array $user): array
     if (($user['role'] ?? '') === 'user' && empty($user['phone_number'])) {
         $redirect = 'account.php?complete=1';
     }
+    if (in_array($user['role'], ['admin','super_admin'], true)) $redirect='staff-security.php';
     return ['status' => 'success', 'redirect' => $redirect];
 }
 

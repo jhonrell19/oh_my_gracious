@@ -1,3 +1,5 @@
+PHASE 3 UPDATE: Read START_HERE_PHASE3.md first. It supersedes older setup/security/payment instructions below.
+
 # OH MY GRACIOUS — Half 2 installation and deployment
 
 This is a deployment candidate, not a confirmation that your public website is live.

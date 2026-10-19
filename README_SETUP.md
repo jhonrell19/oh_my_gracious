@@ -1,3 +1,5 @@
+PHASE 3 UPDATE: Read START_HERE_PHASE3.md first. It supersedes older setup/security/payment instructions below.
+
 > Updated build: follow START_HERE_HALF2.md first. The older instructions below describe the previous build and are superseded where they conflict.
 
 # OH MY GRACIOUS Salon Management System

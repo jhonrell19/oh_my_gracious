@@ -1,57 +1,117 @@
-OH MY GRACIOUS - VERSION 3.0 PRE-PAYMENT
+Phase 3 staging candidate. Read START_HERE_PHASE3.md and VALIDATION_PHASE3.md.
 
-Core roles
-- Customer (user)
-- Front Desk / Receptionist (admin)
-- Owner / Manager (super_admin)
-
-Authentication
-- One login page for all roles
-- Email/password registration/login
-- Google registration/login using Google Identity Services
-- Google duplicate prevention by provider ID + verified email + DB unique constraints
-- New Google accounts forced to customer role
-- No Google auto-linking to privileged staff/owner accounts
-- Facebook authentication removed
-- Phone/SMS authentication removed
-- Phone number retained only as contact information
-
-Booking operations
-- Multiple services in one appointment
-- Server-side service price calculation
-- Fixed booking times: 9, 10, 11 AM and 1-7 PM
-- Configurable capacity per time
-- Transactional capacity reservation
-- Fully booked / closed / passed time handling
-- Front desk daily slot close/open and capacity override
-- Front desk service availability control with reason
-- Estimated duration informational only
-- Customer-created booking only; Front Desk creation route is disabled
-- Front-desk reschedule, approve, reject, cancel, no-show, check-in, complete
-
-Payments
-- Pay at Salon / Cash only in this release
-- Manual front-desk Paid status + printable receipt
-- Online payment integration intentionally removed/deferred
-
-Owner
-- Revenue summaries from recorded Paid transactions
-- Service category/name/price/duration catalog
-- Technician management
-- Admin account management
-- Fixed slot/default capacity settings
-- Audit logs
-
-Security / deployment foundations
-- Role authorization
-- CSRF
-- password_hash/password_verify
-- prepared statements
-- login rate limiting
-- secure session configuration
-- server-side price validation
-- .env excluded from package/Git
-- no public admin registration
-- no hard-coded production credentials
-
-- PRE_PAYMENT_TEST_CHECKLIST.md — role/booking/security UAT before online payments
+.env.example
+.gitignore
+.htaccess
+.user.ini
+AR_AI_MASK_INSTALL.md
+BUILD_MANIFEST.txt
+CHANGELOG_PANEL_UPGRADE.md
+HALF1_REAL_SERVICES_INSTALL.md
+INSTALL_FIRST.txt
+PRE_PAYMENT_TEST_CHECKLIST.md
+README_SETUP.md
+START_HERE_HALF2.md
+START_HERE_PHASE3.md
+VALIDATION_HALF2.md
+VALIDATION_PHASE3.md
+VERSION.txt
+account.php
+admin-bookings.php
+admin-create-booking.php
+admin-dashboard.php
+admin-management.php
+admin-reschedule.php
+ar-3d-nails.php
+ar-camera.php
+ar-nails.html
+audit-logs.php
+availability-management.php
+backend/admin-create-booking.php
+backend/authorization.php
+backend/available-times.php
+backend/booking-helper.php
+backend/cancel-booking.php
+backend/change-password.php
+backend/complete-phone-registration.php
+backend/config.php
+backend/create-booking.php
+backend/create-paymongo-checkout.php
+backend/csrf.php
+backend/db.php
+backend/delete-design.php
+backend/facebook-auth.php
+backend/forgot-password.php
+backend/google-auth.php
+backend/helpers.php
+backend/mailer.php
+backend/payment-settings-helper.php
+backend/payment-validation.php
+backend/paymongo-helper.php
+backend/public-config.php
+backend/register.php
+backend/reschedule-booking.php
+backend/resend-verification.php
+backend/reset-password.php
+backend/save-design.php
+backend/secret-store.php
+backend/security.php
+backend/send-phone-otp.php
+backend/session.php
+backend/technicians.php
+backend/update-account.php
+backend/update-booking-status.php
+backend/user-login.php
+backend/verify-email.php
+backend/verify-phone-otp.php
+booking-history.php
+booking.php
+composer.json
+composer.lock
+css/style.css
+customers.php
+database/.htaccess
+database/migrations/2026_10_half2_payments.sql
+database/migrations/2026_10_phase3_security.sql
+database/migrations/2026_10_pre_payment_capacity_google_only.sql
+database/migrations/2026_10_real_services_frontdesk_lockdown.sql
+database/production_schema.sql
+database/upgrade_existing_database.sql
+forgot-password.html
+index.html
+js/ar-3d-nails.js
+js/ar-camera.js
+js/auth.js
+js/script.js
+login.html
+logout.php
+models/nail-seg.onnx
+payment-return.php
+payment-settings.php
+phone-register.php
+preview-image.php
+receipt.php
+resend-verification.html
+reset-password.php
+revenue-reports.php
+saved-designs.php
+services-management.php
+staff-security.php
+super-admin-dashboard.php
+system-settings.php
+technician-management.php
+tests/.htaccess
+tests/payment-validation.php
+tests/security-validation.php
+tools/.htaccess
+tools/create-owner.php
+tools/deployment-check.php
+tools/generate-app-key.php
+tools/health-check.php
+tools/recover-staff-mfa.php
+tools/security-maintenance.php
+uploads/.htaccess
+uploads/designs/.gitkeep
+uploads/designs/.htaccess
+user-dashboard.php
+webhooks/paymongo.php

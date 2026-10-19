@@ -19,6 +19,7 @@ function csrfInput(): string
 
 function verifyCsrf(): void
 {
+    if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') { http_response_code(405); header('Allow: POST'); exit('POST required.'); }
     $token = (string)($_POST['csrf_token'] ?? ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? ''));
     if ($token === '' || !hash_equals((string)($_SESSION['csrf_token'] ?? ''), $token)) {
         http_response_code(419);

@@ -10,6 +10,8 @@ $autoload = dirname(__DIR__).'/vendor/autoload.php';
 if (is_file($autoload)) require_once $autoload;
 check(class_exists('Google\Client'), 'Google API client installed');
 check(class_exists('PHPMailer\PHPMailer\PHPMailer'), 'PHPMailer installed');
+try {encryptionKey();check(true,'APP_KEY valid');}catch(Throwable $e){check(false,'APP_KEY valid');}
+try {$private=paymentStorePath();check($private!==null && is_writable(dirname($private)),'Private payment storage writable');}catch(Throwable $e){check(false,'Private payment storage configured');}
 check(APP_ENV==='production', 'Production environment');
 check(parse_url(APP_URL,PHP_URL_SCHEME)==='https', 'HTTPS APP_URL');
 check(env('DB_USER','root')!=='root' && env('DB_PASSWORD','')!=='', 'Dedicated database account');
@@ -18,13 +20,13 @@ check(env('SMTP_HOST','')!=='' && env('SMTP_USERNAME','')!=='' && env('SMTP_PASS
 check(filter_var(env('MAIL_FROM',''),FILTER_VALIDATE_EMAIL)!==false, 'Mail sender configured');
 check(is_file(dirname(__DIR__).'/models/nail-seg.onnx'), 'AR model present');
 check(is_writable(dirname(__DIR__).'/uploads/designs'), 'Design storage writable');
-if (env('PAYMONGO_ENABLED','false')==='true') {
+if (PAYMONGO_ACTIVE) {
  check(paymongoEnabled(), 'PayMongo credentials and webhook secret');
- echo str_starts_with(PAYMONGO_SECRET_KEY,'sk_live_') ? "Payment mode: LIVE\n" : "Payment mode: TEST (no real money)\n";
+ echo str_starts_with(PAYMONGO_SECRET_KEY,'sk_live_') ? "Payment mode: LIVE\n" : "Payment mode: TEST (use simulated test flows; do not pay QR Ph codes)\n";
 }
 if (extension_loaded('mysqli')) {
  require_once __DIR__.'/../backend/db.php';
- foreach (['payment_checkout_requests','payment_webhook_events'] as $table) {
+ foreach (['payment_checkout_requests','payment_webhook_events','user_security','security_attempts'] as $table) {
    $result=$conn->query("SHOW TABLES LIKE '".$table."'"); check($result->num_rows===1,'Table: '.$table);
  }
  $owner=$conn->query("SELECT id FROM users WHERE role='super_admin' AND account_status='active' LIMIT 1");

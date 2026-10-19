@@ -1,3 +1,5 @@
+PHASE 3 UPDATE: Read START_HERE_PHASE3.md first. It supersedes older setup/security/payment instructions below.
+
 OH MY GRACIOUS - PRE-PAYMENT OPERATIONAL UPGRADE
 Version: 3.1-half1-real-services
 

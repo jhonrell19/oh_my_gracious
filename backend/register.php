@@ -5,7 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/helpers.php';
 require_once __DIR__ . '/csrf.php';
-verifyCsrf();
+verifyCsrf();require_once __DIR__.'/security.php';try{securityThrottle($conn,'register-ip',(string)($_SERVER['REMOTE_ADDR']??''),20);}catch(Throwable $e){jsonResponse('error','Too many registrations. Wait 15 minutes.',[],429);}
 
 $fullName = trim((string)($_POST['full_name'] ?? ''));
 $email = strtolower(trim((string)($_POST['email'] ?? '')));
@@ -22,7 +22,7 @@ if ($fullName === '' || $email === '' || $phone === null || $password === '' || 
 }
 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) jsonResponse('error', 'Please enter a valid email address.', [], 422);
 if ($password !== $confirm) jsonResponse('error', 'The passwords do not match.', [], 422);
-if (strlen($password) < 8 || !preg_match('/[A-Z]/', $password) || !preg_match('/[a-z]/', $password) || !preg_match('/[0-9]/', $password) || !preg_match('/[^A-Za-z0-9]/', $password)) {
+if (strlen($password) > 72 || strlen($password) < 8 || !preg_match('/[A-Z]/', $password) || !preg_match('/[a-z]/', $password) || !preg_match('/[0-9]/', $password) || !preg_match('/[^A-Za-z0-9]/', $password)) {
     jsonResponse('error', 'Password must have at least 8 characters, uppercase, lowercase, a number, and a special character.', [], 422);
 }
 

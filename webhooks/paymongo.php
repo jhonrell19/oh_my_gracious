@@ -38,7 +38,8 @@ try {
     $s->bind_param('ss', $e['event_key'], $e['payment_id']); $s->execute(); $previous = $s->get_result()->fetch_assoc();
     if ($previous) {
         if ((int)$previous['booking_id'] !== $e['booking_id'] || $previous['payment_id'] !== $e['payment_id']) throw new RuntimeException('Event identity mismatch.');
-        $conn->commit(); respond(200, true);
+        setSetting($conn,'payment_verified_delivery',json_encode(['fingerprint'=>hash('sha256',PAYMONGO_SECRET_KEY."\0".PAYMONGO_WEBHOOK_SECRET."\0".APP_URL),'received_at'=>date(DATE_ATOM)]));
+    $conn->commit(); respond(200, true);
     }
     if (in_array($p['status'], ['Paid','Refund Required','Refunded'], true)) throw new RuntimeException('Unexpected additional payment.');
     $s = $conn->prepare('INSERT INTO payment_webhook_events(event_key,booking_id,session_id,payment_id,amount_centavos) VALUES (?,?,?,?,?)');
@@ -50,6 +51,7 @@ try {
     $s = $conn->prepare('UPDATE bookings SET payment_method=?,payment_status=?,payment_reference=? WHERE id=?');
     $s->bind_param('sssi', $method, $status, $e['payment_id'], $e['booking_id']); $s->execute();
     audit($conn, 'paymongo_payment_confirmed', 'booking', $e['booking_id'], ['payment_id'=>$e['payment_id'],'status'=>$status]);
+    setSetting($conn,'payment_verified_delivery',json_encode(['fingerprint'=>hash('sha256',PAYMONGO_SECRET_KEY."\0".PAYMONGO_WEBHOOK_SECRET."\0".APP_URL),'received_at'=>date(DATE_ATOM)]));
     $conn->commit(); respond(200, true);
 } catch (Throwable $error) {
     try { $conn->rollback(); } catch (Throwable $ignored) {}

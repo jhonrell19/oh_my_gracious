@@ -17,4 +17,5 @@ if (!defined('OMG_SERVER_WEBHOOK') && session_status() !== PHP_SESSION_ACTIVE) {
         'samesite' => 'Lax',
     ]);
     session_start();
+    header('Cache-Control: no-store, private');
 }

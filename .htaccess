@@ -1,5 +1,5 @@
 Options -Indexes
-<FilesMatch "(^\.|\.(sql|log|md|zip|bak|ini|lock)$|^composer\.json$|^BUILD_MANIFEST\.txt$|^INSTALL_FIRST\.txt$)">
+<FilesMatch "(?i)(^\.|\.(sql|log|md|zip|bak|ini|lock|enc|env|pem|key)$|^composer\.json$|^BUILD_MANIFEST\.txt$|^INSTALL_FIRST\.txt$)">
     Require all denied
 </FilesMatch>
 <IfModule mod_headers.c>

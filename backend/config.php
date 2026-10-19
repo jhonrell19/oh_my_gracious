@@ -36,12 +36,16 @@ date_default_timezone_set((string)APP_TIMEZONE);
 define('GOOGLE_CLIENT_ID', env('GOOGLE_CLIENT_ID', ''));
 
 
-define('PAYMONGO_SECRET_KEY', env('PAYMONGO_SECRET_KEY', ''));
-define('PAYMONGO_WEBHOOK_SECRET', env('PAYMONGO_WEBHOOK_SECRET', ''));
-define('PAYMONGO_PAYMENT_METHODS', env('PAYMONGO_PAYMENT_METHODS', 'gcash,paymaya,qrph,card'));
+require_once __DIR__.'/secret-store.php';
+try { $paymentConfig=savedPaymentConfig(); }
+catch (Throwable $e) { error_log('Payment configuration unavailable.'); http_response_code(503); exit('Secure configuration unavailable. Contact the site administrator.'); }
+define('PAYMONGO_SECRET_KEY', $paymentConfig['key'] ?? env('PAYMONGO_SECRET_KEY', ''));
+define('PAYMONGO_WEBHOOK_SECRET', $paymentConfig['webhook'] ?? env('PAYMONGO_WEBHOOK_SECRET', ''));
+define('PAYMONGO_PAYMENT_METHODS', $paymentConfig['methods'] ?? env('PAYMONGO_PAYMENT_METHODS', 'card,gcash,paymaya,qrph'));
+define('PAYMONGO_ACTIVE', $paymentConfig['enabled'] ?? (env('PAYMONGO_ENABLED', 'false') === 'true'));
 function paymongoEnabled(): bool
 {
-    return env('PAYMONGO_ENABLED', 'false') === 'true'
+    return env('PAYMONGO_PAUSED', 'false') !== 'true' && PAYMONGO_ACTIVE
         && preg_match('/^sk_(test|live)_/', PAYMONGO_SECRET_KEY) === 1
         && PAYMONGO_WEBHOOK_SECRET !== '';
 }

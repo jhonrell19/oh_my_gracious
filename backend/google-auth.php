@@ -4,7 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/helpers.php';
 require_once __DIR__ . '/csrf.php';
-verifyCsrf();
+verifyCsrf();require_once __DIR__.'/security.php';try{securityThrottle($conn,'google-ip',(string)($_SERVER['REMOTE_ADDR']??''),60);}catch(Throwable $e){jsonResponse('error','Too many requests. Wait 15 minutes.',[],429);}
 
 if (GOOGLE_CLIENT_ID === '') jsonResponse('error', 'Google sign-in is not configured.', [], 503);
 $credential = trim((string)($_POST['credential'] ?? ''));

@@ -15,6 +15,16 @@ function paymongoMethodTypes(): array
 
 function createPaymongoCheckoutForBooking(mysqli $conn, int $bookingId, int $userId): string
 {
+    $l=$conn->query("SELECT GET_LOCK('omg_payment_config',10) ok")->fetch_assoc();
+    if((int)$l['ok']!==1)throw new RuntimeException('Payment settings are busy. Try again shortly.');
+    try {
+        $current=savedPaymentConfig();
+        if($current && ($current['key']!==PAYMONGO_SECRET_KEY || $current['webhook']!==PAYMONGO_WEBHOOK_SECRET || !$current['enabled']))throw new RuntimeException('Payment settings changed. Reload the page.');
+        return createPaymongoCheckoutLocked($conn,$bookingId,$userId);
+    } finally {$conn->query("SELECT RELEASE_LOCK('omg_payment_config')");}
+}
+function createPaymongoCheckoutLocked(mysqli $conn, int $bookingId, int $userId): string
+{
     if (!paymongoEnabled()) throw new RuntimeException('Online payment is not configured.');
     // Serialize checkout calls across tabs and PHP workers, including the API request.
     $lockName = 'omg-checkout-' . $bookingId;

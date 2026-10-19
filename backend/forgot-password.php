@@ -4,7 +4,9 @@ declare(strict_types=1);
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/helpers.php';
 require_once __DIR__ . '/csrf.php';
-verifyCsrf();
+verifyCsrf();require_once __DIR__.'/security.php';
+try{securityThrottle($conn,'mail-ip',(string)($_SERVER['REMOTE_ADDR']??''),30);securityThrottle($conn,'mail-email',strtolower(trim((string)($_POST['email']??''))),5);}catch(Throwable $e){jsonResponse('error','Too many requests. Wait 15 minutes.',[],429);}
+
 $email = strtolower(trim((string)($_POST['email'] ?? '')));
 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) jsonResponse('error', 'Enter a valid email address.', [], 422);
 $stmt = $conn->prepare("SELECT id FROM users WHERE email=? AND account_status<>'suspended' LIMIT 1");

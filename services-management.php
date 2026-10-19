@@ -122,7 +122,7 @@ $services = $conn->query(
         <a href="admin-management.php">Staff Admins</a>
         <a href="system-settings.php">Settings</a>
         <a href="audit-logs.php">Activity</a>
-        <a href="logout.php" class="logout-btn">Logout</a>
+        <a href="payment-settings.php">Payments</a><a href="staff-security.php">Security</a><a href="logout.php" class="logout-btn">Logout</a>
     </nav>
 </header>
 
